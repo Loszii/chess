@@ -14,16 +14,17 @@ class obj {
         int x;
         int y;
         double scale;
-        Color color = WHITE;
-        obj(double scale, Texture2D texture) {
+        char name;
+        obj(double scale, Texture2D texture, char name) {
             this->scale = scale;
             this->texture = texture;
+            this->name = name;
         }
         obj() = default;
         //implement deconstructor
         void draw(){
             if (alive) {
-                DrawTextureEx(texture, (Vector2){x, y}, 0, scale, color);
+                DrawTextureEx(texture, (Vector2){x, y}, 0, scale, WHITE);
             }
         }
 };
@@ -72,24 +73,35 @@ obj* get_piece(int x, int y, obj* all_pieces) {
 
 int main() {
 
+    //to:do, make movable squares highlighted, have functions to recturn them given the object
+
+    //window
     InitWindow(screen_width, screen_height, "Chess");
     SetTargetFPS(60);
 
-    obj board = obj(1, LoadTexture("../res/board.png"));
+    //board
+    obj board = obj(1, LoadTexture("../res/board.png"), 'b');
     board.x = board.y = 0;
 
+    //selector settings
+    bool selector = false;
+    int selector_x = 0;
+    int selector_y = 0;
+    Texture2D selector_texture = LoadTexture("../res/selector.png");
+
+    //piece array
     obj all_pieces[32];
     int count = 0;
 
     //black pieces
-    obj b_rook1 = obj(0.75, LoadTexture("../res/b-rook.png"));
-    obj b_knight1 = obj(0.75, LoadTexture("../res/b-knight.png"));
-    obj b_bishop1 = obj(0.75, LoadTexture("../res/b-bishop.png"));
-    obj b_queen = obj(0.75, LoadTexture("../res/b-queen.png"));
-    obj b_king = obj(0.75, LoadTexture("../res/b-king.png"));
-    obj b_bishop2 = obj(0.75, LoadTexture("../res/b-bishop.png"));
-    obj b_knight2 = obj(0.75, LoadTexture("../res/b-knight.png"));
-    obj b_rook2 = obj(0.75, LoadTexture("../res/b-rook.png"));
+    obj b_rook1 = obj(0.75, LoadTexture("../res/b-rook.png"), 'r');
+    obj b_knight1 = obj(0.75, LoadTexture("../res/b-knight.png"), 'n');
+    obj b_bishop1 = obj(0.75, LoadTexture("../res/b-bishop.png"), 'b');
+    obj b_queen = obj(0.75, LoadTexture("../res/b-queen.png"), 'q');
+    obj b_king = obj(0.75, LoadTexture("../res/b-king.png"), 'k');
+    obj b_bishop2 = obj(0.75, LoadTexture("../res/b-bishop.png"), 'b');
+    obj b_knight2 = obj(0.75, LoadTexture("../res/b-knight.png"), 'n');
+    obj b_rook2 = obj(0.75, LoadTexture("../res/b-rook.png"), 'r');
 
     obj black_row1[8] = {b_rook1, b_knight1, b_bishop1, b_queen, b_king, b_bishop2, b_knight2, b_rook2};
 
@@ -103,14 +115,14 @@ int main() {
         count += 1;
     }
 
-    obj b_pawn1 = obj(0.75, LoadTexture("../res/b-pawn.png"));
-    obj b_pawn2 = obj(0.75, LoadTexture("../res/b-pawn.png"));
-    obj b_pawn3 = obj(0.75, LoadTexture("../res/b-pawn.png"));
-    obj b_pawn4 = obj(0.75, LoadTexture("../res/b-pawn.png"));
-    obj b_pawn5 = obj(0.75, LoadTexture("../res/b-pawn.png"));
-    obj b_pawn6 = obj(0.75, LoadTexture("../res/b-pawn.png"));
-    obj b_pawn7 = obj(0.75, LoadTexture("../res/b-pawn.png"));
-    obj b_pawn8 = obj(0.75, LoadTexture("../res/b-pawn.png"));
+    obj b_pawn1 = obj(0.75, LoadTexture("../res/b-pawn.png"), 'p');
+    obj b_pawn2 = obj(0.75, LoadTexture("../res/b-pawn.png"), 'p');
+    obj b_pawn3 = obj(0.75, LoadTexture("../res/b-pawn.png"), 'p');
+    obj b_pawn4 = obj(0.75, LoadTexture("../res/b-pawn.png"), 'p');
+    obj b_pawn5 = obj(0.75, LoadTexture("../res/b-pawn.png"), 'p');
+    obj b_pawn6 = obj(0.75, LoadTexture("../res/b-pawn.png"), 'p');
+    obj b_pawn7 = obj(0.75, LoadTexture("../res/b-pawn.png"), 'p');
+    obj b_pawn8 = obj(0.75, LoadTexture("../res/b-pawn.png"), 'p');
 
     obj black_row2[8] = {b_pawn1, b_pawn2, b_pawn3, b_pawn4, b_pawn5, b_pawn6, b_pawn7, b_pawn8};
 
@@ -125,14 +137,14 @@ int main() {
     }
 
     //white pieces
-    obj w_rook1 = obj(0.75, LoadTexture("../res/w-rook.png"));
-    obj w_knight1 = obj(0.75, LoadTexture("../res/w-knight.png"));
-    obj w_bishop1 = obj(0.75, LoadTexture("../res/w-bishop.png"));
-    obj w_queen = obj(0.75, LoadTexture("../res/w-queen.png"));
-    obj w_king = obj(0.75, LoadTexture("../res/w-king.png"));
-    obj w_bishop2 = obj(0.75, LoadTexture("../res/w-bishop.png"));
-    obj w_knight2 = obj(0.75, LoadTexture("../res/w-knight.png"));
-    obj w_rook2 = obj(0.75, LoadTexture("../res/w-rook.png"));
+    obj w_rook1 = obj(0.75, LoadTexture("../res/w-rook.png"), 'r');
+    obj w_knight1 = obj(0.75, LoadTexture("../res/w-knight.png"), 'n');
+    obj w_bishop1 = obj(0.75, LoadTexture("../res/w-bishop.png"), 'b');
+    obj w_queen = obj(0.75, LoadTexture("../res/w-queen.png"), 'q');
+    obj w_king = obj(0.75, LoadTexture("../res/w-king.png"), 'k');
+    obj w_bishop2 = obj(0.75, LoadTexture("../res/w-bishop.png"), 'b');
+    obj w_knight2 = obj(0.75, LoadTexture("../res/w-knight.png"), 'n');
+    obj w_rook2 = obj(0.75, LoadTexture("../res/w-rook.png"), 'r');
 
     obj white_row1[8] = {w_rook1, w_knight1, w_bishop1, w_queen, w_king, w_bishop2, w_knight2, w_rook2};
 
@@ -146,14 +158,14 @@ int main() {
         count += 1;
     }
 
-    obj w_pawn1 = obj(0.75, LoadTexture("../res/w-pawn.png"));
-    obj w_pawn2 = obj(0.75, LoadTexture("../res/w-pawn.png"));
-    obj w_pawn3 = obj(0.75, LoadTexture("../res/w-pawn.png"));
-    obj w_pawn4 = obj(0.75, LoadTexture("../res/w-pawn.png"));
-    obj w_pawn5 = obj(0.75, LoadTexture("../res/w-pawn.png"));
-    obj w_pawn6 = obj(0.75, LoadTexture("../res/w-pawn.png"));
-    obj w_pawn7 = obj(0.75, LoadTexture("../res/w-pawn.png"));
-    obj w_pawn8 = obj(0.75, LoadTexture("../res/w-pawn.png"));
+    obj w_pawn1 = obj(0.75, LoadTexture("../res/w-pawn.png"), 'p');
+    obj w_pawn2 = obj(0.75, LoadTexture("../res/w-pawn.png"), 'p');
+    obj w_pawn3 = obj(0.75, LoadTexture("../res/w-pawn.png"), 'p');
+    obj w_pawn4 = obj(0.75, LoadTexture("../res/w-pawn.png"), 'p');
+    obj w_pawn5 = obj(0.75, LoadTexture("../res/w-pawn.png"), 'p');
+    obj w_pawn6 = obj(0.75, LoadTexture("../res/w-pawn.png"), 'p');
+    obj w_pawn7 = obj(0.75, LoadTexture("../res/w-pawn.png"), 'p');
+    obj w_pawn8 = obj(0.75, LoadTexture("../res/w-pawn.png"), 'p');
 
     obj white_row2[8] = {w_pawn1, w_pawn2, w_pawn3, w_pawn4, w_pawn5, w_pawn6, w_pawn7, w_pawn8};
 
@@ -175,6 +187,11 @@ int main() {
         ClearBackground(WHITE);
         board.draw();
         draw_pieces(all_pieces);
+
+        if (selector) {
+            DrawTextureEx(selector_texture, (Vector2){selector_x, selector_y}, 0, 1, (Color){255, 0, 0, 50});
+        }
+
         EndDrawing();
 
         //game functionality
@@ -183,7 +200,12 @@ int main() {
             int mouse_y = GetMouseY();
             if(is_piece(mouse_x, mouse_y, all_pieces)) {
                 obj* piece = get_piece(mouse_x, mouse_y, all_pieces);
-                piece->color = RED;
+                selector = true;
+                selector_x = piece->x;
+                selector_y = piece->y;
+                std::cout << piece->name << '\n';
+            } else {
+                selector = false;
             }
             
         }
