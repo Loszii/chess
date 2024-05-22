@@ -80,7 +80,7 @@ void drawSelect(std::unordered_map<int, std::tuple<int, int>> coord, int pos, Te
     //shades in a square at the given pos of form i*10 + j
     int x = std::get<0>(coord[pos]);
     int y = std::get<1>(coord[pos]);
-    DrawTextureEx(select_texture, (Vector2){x, y}, 0, 1, (Color){255, 0, 0, 100});
+    DrawTextureEx(select_texture, (Vector2){x, y}, 0, 1, (Color){255, 0, 0, 50});
 }
 
 int get_index(int x, int y, std::unordered_map<int, std::tuple<int, int>> coord) {
@@ -102,18 +102,6 @@ int get_index(int x, int y, std::unordered_map<int, std::tuple<int, int>> coord)
     }
 }
 
-int is_piece(int x, int y, int board[8][8], std::unordered_map<int, std::tuple<int, int>> coord) {
-    //returns i*10+j of piece if there is one at x,y. else -1
-    int index = get_index(x, y, coord);
-    int i = index / 10;
-    int j = index % 10;
-    if (board[i][j] != 0) {
-        return index;
-    } else {
-        return -1;
-    }
-}
-
 std::vector<int> get_moves(int board[8][8], std::unordered_map<int, std::tuple<int, int>> coord, int pos) {
     //given a board, coord sys, and square return all possible indices to move
     //pos is a index of form i*10 + j
@@ -123,12 +111,100 @@ std::vector<int> get_moves(int board[8][8], std::unordered_map<int, std::tuple<i
     int j = pos % 10;
     int piece = board[i][j];
     switch (piece) {
+        case -1://black pawn
+            if (i == 1 && board[i+1][j] == 0 && board[i+2][j] == 0) { //straight dir
+                moves.push_back(((i+1)*10)+j);
+                moves.push_back(((i+2)*10)+j);
+            } else if (i < 7 && board[i+1][j] == 0) {
+                moves.push_back(((i+1)*10)+j);
+            }
+            if (i < 7) { //diags
+                if (j > 0 && board[i+1][j-1] > 0) { // < 0 means black piece
+                    moves.push_back((i+1)*10 + (j-1));
+                }
+                if (j < 7 && board[i+1][j+1] > 0) {
+                    moves.push_back((i+1)*10 + (j+1));
+                }
+            }
+            break;
         case 1://white pawn
-            if (i > 0 && board[i-1][j] == 0) {
+            if (i == 6 && board[i-1][j] == 0 && board[i-2][j] == 0) { //straight dir
+                moves.push_back(((i-1)*10)+j);
+                moves.push_back(((i-2)*10)+j);
+            } else if (i > 0 && board[i-1][j] == 0) {
                 moves.push_back(((i-1)*10)+j);
             }
+            if (i > 0) { //diags
+                if (j > 0 && board[i-1][j-1] < 0) { // < 0 means black piece
+                    moves.push_back((i-1)*10 + (j-1));
+                }
+                if (j < 7 && board[i-1][j+1] < 0) {
+                    moves.push_back((i-1)*10 + (j+1));
+                }
+            }
+            break;
+        case 2://white bishop
+            for (int k=1; k < j+1; k++) { //upper left
+                if (i-k < 0) {
+                    break;
+                }
+                if (board[i-k][j-k] == 0) {
+                    moves.push_back((i-k)*10 + (j-k));
+                } else if (board[i-k][j-k] < 0) { //piece there so break after
+                    moves.push_back((i-k)*10 + (j-k));
+                    break;
+                } else {
+                    break; //hit own piece so break
+                }
+            }
+            for (int k=1; k < j+1; k++) { //lower left
+                if (i+k > 7) {
+                    break;
+                }
+                if (board[i+k][j-k] == 0) {
+                    moves.push_back((i+k)*10 + (j-k));
+                } else if (board[i+k][j-k] < 0) { 
+                    moves.push_back((i+k)*10 + (j-k));
+                    break;
+                } else {
+                    break;
+                }
+            }
+            for (int k=1; k < (7-j)+1; k++) { //upper right
+                if (i-k < 0) { //off screen
+                    break;
+                }
+                if (board[i-k][j+k] == 0) {
+                    moves.push_back((i-k)*10 + (j+k));
+                } else if (board[i-k][j+k] < 0) { 
+                    moves.push_back((i-k)*10 + (j+k));
+                    break;
+                } else {
+                    break;
+                }
+            }
+            for (int k=1; k < (7-j)+1; k++) { //lower right
+                if (i+k > 7) { //off screen
+                    break;
+                }
+                if (board[i+k][j+k] == 0) {
+                    moves.push_back((i+k)*10 + (j+k));
+                } else if (board[i+k][j+k] < 0) { 
+                    moves.push_back((i+k)*10 + (j+k));
+                    break;
+                } else {
+                    break;
+                }
+            }
+            break;
+
     }
     return moves;
+}
+
+void move_piece(int start_pos, int end_pos, int board[8][8]) {
+    board[end_pos/10][end_pos%10] = board[start_pos/10][start_pos%10];
+    board[start_pos/10][start_pos%10] = 0;
 }
 
 int main() {
@@ -148,6 +224,10 @@ int main() {
         {1, 1, 1, 1, 1, 1, 1, 1},
         {4, 3, 2, 5, 6, 2, 3, 4},
     };
+
+    bool white_turn = true;
+    std::vector<int> moves;
+    int move_cap;
     
     std::unordered_map<int, Texture2D> skins = get_skins(); //skin textures maps num to Texture2D
     std::unordered_map<int, std::tuple<int, int>> coord = get_coord(); //mapping of indices to x-y coord
@@ -163,6 +243,9 @@ int main() {
 
     //Game loop
     while (!WindowShouldClose()) {
+
+        //TO DO: ONLY GET MOVES WHEN SELECT IS CHANGED TO TRUE NOT EVERY FRAME!
+
         //drawing objects
         BeginDrawing();
         ClearBackground(WHITE);
@@ -173,9 +256,7 @@ int main() {
         //shades in selected squares
         if (select) {
             drawSelect(coord, select_coord, select_texture);
-            std::vector<int> moves = get_moves(board, coord, select_coord);
-            int size = moves.size();
-            for (int i=0; i < size; i++) {
+            for (int i=0; i < move_cap; i++) {
                 drawSelect(coord, moves[i], select_texture);
             }
 
@@ -187,14 +268,43 @@ int main() {
 
         //game functionality
         if (IsMouseButtonPressed(0)) {
-            int mouse_x = GetMouseX();
-            int mouse_y = GetMouseY();
-            int pos = is_piece(mouse_x, mouse_y, board, coord); //returns -1 if no piece and the position if there is
-            if (pos != -1) { //pos num 0-100 representing 2d array indices
-                select = true;
-                select_coord = pos;
-            } else {
-                select = false;
+            int pos = get_index(GetMouseX(), GetMouseY(), coord);
+            int i = pos/10;
+            int j = pos % 10;
+
+            if (select) {
+                //check if mouse was clicked on a available move
+                for (int i=0; i < move_cap; i++) {
+                    if (pos == moves[i]) {
+                        move_piece(select_coord, moves[i], board);
+                        if (white_turn) {
+                            white_turn = false;
+                        } else {
+                            white_turn = true;
+                        }
+                        select = false;
+                        break;
+                    }
+                }
+                if (select) { //if still selecting and didnt make viable move
+                    if ((white_turn && board[i][j] > 0) || (!white_turn && board[i][j] < 0)) { //pos num 0-100 representing 2d array indices
+                        select = true;
+                        select_coord = pos;
+                        moves = get_moves(board, coord, select_coord); //gets possible moves
+                        move_cap = moves.size();
+                    } else {
+                        select = false;
+                    }
+                }
+            } else { //get pos of selection if piece
+                if ((white_turn && board[i][j] > 0) || (!white_turn && board[i][j] < 0)) { //pos num 0-100 representing 2d array indices
+                    select = true;
+                    select_coord = pos;
+                    moves = get_moves(board, coord, select_coord); //gets possible moves
+                    move_cap = moves.size();
+                } else {
+                    select = false;
+                }
             }
             
         }
