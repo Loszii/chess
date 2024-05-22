@@ -1,183 +1,104 @@
 #include "raylib.h"
 #include <iostream>
+#include <unordered_map>
+#include <tuple>
 
 const int screen_width = 784;
 const int screen_height = 784;
 
 const int square_width = 96;
 const int bevel = 8;
+const double scale = 0.75; // scale for pieces to fit into sqayre
 
-class obj {
-    public:
-        bool alive = true;
-        Texture2D texture;
-        int x;
-        int y;
-        double scale;
-        char name;
-        obj(double scale, Texture2D texture, char name) {
-            this->scale = scale;
-            this->texture = texture;
-            this->name = name;
+std::unordered_map<int, Texture2D> get_skins() {
+    /*key:
+    + = white, - = black
+    0: empty
+    1: pawn
+    2: bishop
+    3: knight
+    4: rook
+    5: queen
+    6: king*/
+    
+    std::unordered_map<int, Texture2D> skins;
+    skins[1] = LoadTexture("../res/w-pawn.png");
+    skins[2] = LoadTexture("../res/w-bishop.png");
+    skins[3] = LoadTexture("../res/w-knight.png");
+    skins[4] = LoadTexture("../res/w-rook.png");
+    skins[5] = LoadTexture("../res/w-queen.png");
+    skins[6] = LoadTexture("../res/w-king.png");
+
+    skins[-1] = LoadTexture("../res/b-pawn.png");
+    skins[-2] = LoadTexture("../res/b-bishop.png");
+    skins[-3] = LoadTexture("../res/b-knight.png");
+    skins[-4] = LoadTexture("../res/b-rook.png");
+    skins[-5] = LoadTexture("../res/b-queen.png");
+    skins[-6] = LoadTexture("../res/b-king.png");
+
+    return skins;
+}
+
+std::unordered_map<int, std::tuple<int, int>> get_coord() {
+
+    std::unordered_map<int, std::tuple<int, int>> coord;
+    int x;
+    int y;
+    for (int i=0; i < 80; i += 10) {
+        x = bevel;
+        y = bevel + ((i/10) * square_width);
+        for (int j=0; j < 8; j++) {
+            coord[i+j] = std::make_tuple(x, y);
+            x += square_width;
         }
-        obj() = default;
-        //implement deconstructor
-        void draw(){
-            if (alive) {
-                DrawTextureEx(texture, (Vector2){x, y}, 0, scale, WHITE);
+    }
+    
+    return coord;
+}
+
+void drawGame(int board[8][8], std::unordered_map<int, std::tuple<int, int>> coord, std::unordered_map<int, Texture2D> skins, Texture2D board_texture, Texture2D selector_texture) {
+    DrawTexture(board_texture, 0, 0, WHITE);
+    int x;
+    int y;
+    for (int i=0; i < 8; i++) {
+        for (int j=0; j < 8; j++) {
+            if (board[i][j] != 0) {
+                int ind = (i*10) + j;
+                x = std::get<0>(coord[ind]);
+                y = std::get<1>(coord[ind]);
+                DrawTextureEx(skins[board[i][j]], (Vector2){x, y}, 0, scale, WHITE);
             }
-        }
-};
-
-
-void draw_pieces(obj* all_pieces) { //take in array of all pieces
-    for (int i=0; i < 32; i++) {
-        all_pieces[i].draw();
-    }
-}
-
-bool is_piece(int x, int y, obj* all_pieces) {
-    //takes in x and y val of cursor and returns true if piece there
-    int left;
-    int right;
-    int top;
-    int bottom;
-    for (int i=0; i < 32; i++) {
-        left = all_pieces[i].x;
-        right = left + square_width;
-        top = all_pieces[i].y;
-        bottom = top + square_width;
-        if (left < x && x < right && top < y && y < bottom) {
-            return true;
-        }
-    }
-    return false;
-}
-
-obj* get_piece(int x, int y, obj* all_pieces) {
-    //takes in x and y val of cursor and gets the piece
-    int left;
-    int right;
-    int top;
-    int bottom;
-    for (int i=0; i < 32; i++) {
-        left = all_pieces[i].x;
-        right = left + square_width;
-        top = all_pieces[i].y;
-        bottom = top + square_width;
-        if (left < x && x < right && top < y && y < bottom) {
-            return &all_pieces[i];
         }
     }
 }
 
 int main() {
 
-    //to:do, make movable squares highlighted, have functions to recturn them given the object
-
     //window
     InitWindow(screen_width, screen_height, "Chess");
     SetTargetFPS(60);
 
-    //board
-    obj board = obj(1, LoadTexture("../res/board.png"), 'b');
-    board.x = board.y = 0;
+    int board[8][8] = {
+        {-4, -3, -2, -5, -6, -2, -3, -4},
+        {-1, -1, -1, -1, -1, -1, -1, -1},
+        {0, 0, 0, 0, 0, 0, 0, 0},
+        {0, 0, 0, 0, 0, 0, 0, 0},
+        {0, 0, 0, 0, 0, 0, 0, 0},
+        {0, 0, 0, 0, 0, 0, 0, 0},
+        {1, 1, 1, 1, 1, 1, 1, 1},
+        {4, 3, 2, 5, 6, 2, 3, 4},
+    };
+    
+    std::unordered_map<int, Texture2D> skins = get_skins(); //skin textures maps num to Texture2D
+    std::unordered_map<int, std::tuple<int, int>> coord = get_coord();
+    //mapping of indices to x-y coord
+    //00, 01, 02, 03, 04, 05, 06, 07,
+    //10, 11, 12, 13, 14, 15, 16, 17...
 
-    //selector settings
-    bool selector = false;
-    int selector_x = 0;
-    int selector_y = 0;
-    Texture2D selector_texture = LoadTexture("../res/selector.png");
 
-    //piece array
-    obj all_pieces[32];
-    int count = 0;
-
-    //black pieces
-    obj b_rook1 = obj(0.75, LoadTexture("../res/b-rook.png"), 'r');
-    obj b_knight1 = obj(0.75, LoadTexture("../res/b-knight.png"), 'n');
-    obj b_bishop1 = obj(0.75, LoadTexture("../res/b-bishop.png"), 'b');
-    obj b_queen = obj(0.75, LoadTexture("../res/b-queen.png"), 'q');
-    obj b_king = obj(0.75, LoadTexture("../res/b-king.png"), 'k');
-    obj b_bishop2 = obj(0.75, LoadTexture("../res/b-bishop.png"), 'b');
-    obj b_knight2 = obj(0.75, LoadTexture("../res/b-knight.png"), 'n');
-    obj b_rook2 = obj(0.75, LoadTexture("../res/b-rook.png"), 'r');
-
-    obj black_row1[8] = {b_rook1, b_knight1, b_bishop1, b_queen, b_king, b_bishop2, b_knight2, b_rook2};
-
-    int x = bevel;
-    int y = bevel;
-    for (int i=0; i < 8; i++) {
-        black_row1[i].x = x;
-        black_row1[i].y = y;
-        x += square_width;
-        all_pieces[count] = black_row1[i];
-        count += 1;
-    }
-
-    obj b_pawn1 = obj(0.75, LoadTexture("../res/b-pawn.png"), 'p');
-    obj b_pawn2 = obj(0.75, LoadTexture("../res/b-pawn.png"), 'p');
-    obj b_pawn3 = obj(0.75, LoadTexture("../res/b-pawn.png"), 'p');
-    obj b_pawn4 = obj(0.75, LoadTexture("../res/b-pawn.png"), 'p');
-    obj b_pawn5 = obj(0.75, LoadTexture("../res/b-pawn.png"), 'p');
-    obj b_pawn6 = obj(0.75, LoadTexture("../res/b-pawn.png"), 'p');
-    obj b_pawn7 = obj(0.75, LoadTexture("../res/b-pawn.png"), 'p');
-    obj b_pawn8 = obj(0.75, LoadTexture("../res/b-pawn.png"), 'p');
-
-    obj black_row2[8] = {b_pawn1, b_pawn2, b_pawn3, b_pawn4, b_pawn5, b_pawn6, b_pawn7, b_pawn8};
-
-    x = bevel;
-    y = square_width + bevel;
-    for (int i=0; i < 8; i++) {
-        black_row2[i].x = x;
-        black_row2[i].y = y;
-        x += square_width;
-        all_pieces[count] = black_row2[i];
-        count += 1;
-    }
-
-    //white pieces
-    obj w_rook1 = obj(0.75, LoadTexture("../res/w-rook.png"), 'r');
-    obj w_knight1 = obj(0.75, LoadTexture("../res/w-knight.png"), 'n');
-    obj w_bishop1 = obj(0.75, LoadTexture("../res/w-bishop.png"), 'b');
-    obj w_queen = obj(0.75, LoadTexture("../res/w-queen.png"), 'q');
-    obj w_king = obj(0.75, LoadTexture("../res/w-king.png"), 'k');
-    obj w_bishop2 = obj(0.75, LoadTexture("../res/w-bishop.png"), 'b');
-    obj w_knight2 = obj(0.75, LoadTexture("../res/w-knight.png"), 'n');
-    obj w_rook2 = obj(0.75, LoadTexture("../res/w-rook.png"), 'r');
-
-    obj white_row1[8] = {w_rook1, w_knight1, w_bishop1, w_queen, w_king, w_bishop2, w_knight2, w_rook2};
-
-    x = bevel;
-    y = 7 * square_width + bevel;
-    for (int i=0; i < 8; i++) {
-        white_row1[i].x = x;
-        white_row1[i].y = y;
-        x += square_width;
-        all_pieces[count] = white_row1[i];
-        count += 1;
-    }
-
-    obj w_pawn1 = obj(0.75, LoadTexture("../res/w-pawn.png"), 'p');
-    obj w_pawn2 = obj(0.75, LoadTexture("../res/w-pawn.png"), 'p');
-    obj w_pawn3 = obj(0.75, LoadTexture("../res/w-pawn.png"), 'p');
-    obj w_pawn4 = obj(0.75, LoadTexture("../res/w-pawn.png"), 'p');
-    obj w_pawn5 = obj(0.75, LoadTexture("../res/w-pawn.png"), 'p');
-    obj w_pawn6 = obj(0.75, LoadTexture("../res/w-pawn.png"), 'p');
-    obj w_pawn7 = obj(0.75, LoadTexture("../res/w-pawn.png"), 'p');
-    obj w_pawn8 = obj(0.75, LoadTexture("../res/w-pawn.png"), 'p');
-
-    obj white_row2[8] = {w_pawn1, w_pawn2, w_pawn3, w_pawn4, w_pawn5, w_pawn6, w_pawn7, w_pawn8};
-
-    x = bevel;
-    y = 6 * square_width + bevel;
-    for (int i=0; i < 8; i++) {
-        white_row2[i].x = x;
-        white_row2[i].y = y;
-        x += square_width;
-        all_pieces[count] = white_row2[i];
-        count += 1;
-    }
+    Texture2D board_texture = LoadTexture("../res/board.png");
+    Texture2D select_texture = LoadTexture("../res/selector.png");
+    bool selector = false; //make false if click on 0 square
 
 
     //Game loop
@@ -185,15 +106,12 @@ int main() {
         //drawing objects
         BeginDrawing();
         ClearBackground(WHITE);
-        board.draw();
-        draw_pieces(all_pieces);
-
-        if (selector) {
-            DrawTextureEx(selector_texture, (Vector2){selector_x, selector_y}, 0, 1, (Color){255, 0, 0, 50});
-        }
+        
+        drawGame(board, coord, skins, board_texture, select_texture);
 
         EndDrawing();
 
+        /*
         //game functionality
         if (IsMouseButtonPressed(0)) {
             int mouse_x = GetMouseX();
@@ -208,7 +126,13 @@ int main() {
                 selector = false;
             }
             
-        }
+        }*/
+    }
+    //unloading textures
+    UnloadTexture(board_texture);
+    UnloadTexture(select_texture);
+    for (auto& skin : skins) {
+        UnloadTexture(skin.second);
     }
 
     CloseWindow();

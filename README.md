@@ -1,1 +1,1 @@
-For this project I will be trying to learn C++ by recreating the game of chess. I am doing this mostly to learn the syntax as this will be my first project in C++.
+For this project I will be trying to learn C/C++ by recreating the game of chess. I am doing this mostly to learn the syntax as this will be my first project in C/C++. This project was made possible using the raylib library.
