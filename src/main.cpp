@@ -5,12 +5,12 @@
 #include <vector>
 
 //make these uppercase
-const int screen_width = 784;
-const int screen_height = 784;
+const int SCREEN_WIDTH = 784;
+const int SCREEN_HEIGHT = 784;
 
-const int square_width = 96;
-const int bevel = 8;
-const double scale = 0.75; // scale for pieces to fit into sqayre
+const int SQUARE_WIDTH = 96;
+const int BEVEL = 8;
+const double SCALE = 0.75; // scale for pieces to fit into sqayre
 
 std::unordered_map<int, Texture2D> get_skins() {
     //returns a map that takes in integers representing chess pieces and returns their Texture
@@ -49,11 +49,11 @@ std::unordered_map<int, std::tuple<int, int>> get_coord() {
     int x;
     int y;
     for (int i=0; i < 80; i += 10) {
-        x = bevel;
-        y = bevel + ((i/10) * square_width);
+        x = BEVEL;
+        y = BEVEL + ((i/10) * SQUARE_WIDTH);
         for (int j=0; j < 8; j++) {
             coord[i+j] = std::make_tuple(x, y);
-            x += square_width;
+            x += SQUARE_WIDTH;
         }
     }
     
@@ -71,7 +71,7 @@ void drawGame(int board[8][8], std::unordered_map<int, std::tuple<int, int>> coo
                 int ind = i + j;
                 x = std::get<0>(coord[ind]);
                 y = std::get<1>(coord[ind]);
-                DrawTextureEx(skins[board[i/10][j]], (Vector2){x, y}, 0, scale, WHITE);
+                DrawTextureEx(skins[board[i/10][j]], (Vector2){x, y}, 0, SCALE, WHITE);
             }
         }
     }
@@ -93,9 +93,9 @@ int get_index(int x, int y, std::unordered_map<int, std::tuple<int, int>> coord)
     for (int i=0; i < 80; i += 10) {
         for (int j=0; j < 8; j++) {
             top = std::get<1>(coord[i+j]);
-            bottom = top + square_width;
+            bottom = top + SQUARE_WIDTH;
             left = std::get<0>(coord[i+j]);
-            right = left + square_width;
+            right = left + SQUARE_WIDTH;
             if (left <= x && x <= right && top <= y && y <= bottom) {
                 return i+j;
             }
@@ -671,7 +671,7 @@ int main() {
     //main game loop
 
     //window
-    InitWindow(screen_width, screen_height, "Chess");
+    InitWindow(SCREEN_WIDTH, SCREEN_HEIGHT, "Chess");
     SetTargetFPS(60);
 
     int board[8][8] = {
@@ -698,13 +698,11 @@ int main() {
 
     Texture2D board_texture = LoadTexture("../res/board.png");
     Texture2D select_texture = LoadTexture("../res/selector.png");
-    bool select = false; //make false if click on 0 square
+    bool select = false;
     int select_coord;
 
     //Game loop
     while (!WindowShouldClose()) {
-
-        //TO DO: ONLY GET MOVES WHEN SELECT IS CHANGED TO TRUE NOT EVERY FRAME!
 
         //drawing objects
         BeginDrawing();
@@ -719,9 +717,6 @@ int main() {
             for (int i=0; i < move_cap; i++) {
                 drawSelect(coord, moves[i], select_texture);
             }
-
-            //if mouse is clicked again, use getindex and check if it within moves array
-            //if it is then we place a 0 at the select_coord pos in board and move the int to new spot
         }
 
         EndDrawing();
