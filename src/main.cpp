@@ -95,11 +95,12 @@ int get_index(int x, int y, std::unordered_map<int, std::tuple<int, int>> coord)
             bottom = top + square_width;
             left = std::get<0>(coord[i+j]);
             right = left + square_width;
-            if (left < x && x < right && top < y && y < bottom) {
+            if (left <= x && x <= right && top <= y && y <= bottom) {
                 return i+j;
             }
         }
     }
+    return -1; //cannot find index
 }
 
 std::vector<int> get_moves(int board[8][8], std::unordered_map<int, std::tuple<int, int>> coord, int pos) {
@@ -111,6 +112,7 @@ std::vector<int> get_moves(int board[8][8], std::unordered_map<int, std::tuple<i
     int j = pos % 10;
     int piece = board[i][j];
     switch (piece) {
+
         case -1://black pawn
             if (i == 1 && board[i+1][j] == 0 && board[i+2][j] == 0) { //straight dir
                 moves.push_back(((i+1)*10)+j);
@@ -127,6 +129,7 @@ std::vector<int> get_moves(int board[8][8], std::unordered_map<int, std::tuple<i
                 }
             }
             break;
+        
         case 1://white pawn
             if (i == 6 && board[i-1][j] == 0 && board[i-2][j] == 0) { //straight dir
                 moves.push_back(((i-1)*10)+j);
@@ -143,6 +146,7 @@ std::vector<int> get_moves(int board[8][8], std::unordered_map<int, std::tuple<i
                 }
             }
             break;
+        
         case 2://white bishop
             for (int k=1; k < j+1; k++) { //upper left
                 if (i-k < 0) {
@@ -269,24 +273,35 @@ int main() {
         //game functionality
         if (IsMouseButtonPressed(0)) {
             int pos = get_index(GetMouseX(), GetMouseY(), coord);
-            int i = pos/10;
-            int j = pos % 10;
+            if (pos != -1) { //-1 means not a square
+                int i = pos/10;
+                int j = pos % 10;
 
-            if (select) {
-                //check if mouse was clicked on a available move
-                for (int i=0; i < move_cap; i++) {
-                    if (pos == moves[i]) {
-                        move_piece(select_coord, moves[i], board);
-                        if (white_turn) {
-                            white_turn = false;
-                        } else {
-                            white_turn = true;
+                if (select) {
+                    //check if mouse was clicked on a available move
+                    for (int i=0; i < move_cap; i++) {
+                        if (pos == moves[i]) {
+                            move_piece(select_coord, moves[i], board);
+                            if (white_turn) {
+                                white_turn = false;
+                            } else {
+                                white_turn = true;
+                            }
+                            select = false;
+                            break;
                         }
-                        select = false;
-                        break;
                     }
-                }
-                if (select) { //if still selecting and didnt make viable move
+                    if (select) { //if still selecting and didnt make viable move
+                        if ((white_turn && board[i][j] > 0) || (!white_turn && board[i][j] < 0)) { //pos num 0-100 representing 2d array indices
+                            select = true;
+                            select_coord = pos;
+                            moves = get_moves(board, coord, select_coord); //gets possible moves
+                            move_cap = moves.size();
+                        } else {
+                            select = false;
+                        }
+                    }
+                } else { //get pos of selection if piece
                     if ((white_turn && board[i][j] > 0) || (!white_turn && board[i][j] < 0)) { //pos num 0-100 representing 2d array indices
                         select = true;
                         select_coord = pos;
@@ -296,17 +311,7 @@ int main() {
                         select = false;
                     }
                 }
-            } else { //get pos of selection if piece
-                if ((white_turn && board[i][j] > 0) || (!white_turn && board[i][j] < 0)) { //pos num 0-100 representing 2d array indices
-                    select = true;
-                    select_coord = pos;
-                    moves = get_moves(board, coord, select_coord); //gets possible moves
-                    move_cap = moves.size();
-                } else {
-                    select = false;
-                }
             }
-            
         }
     }
     //unloading textures
