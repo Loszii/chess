@@ -3,4 +3,11 @@
 #include <vector>
 
 #pragma once
-std::vector<int> get_moves(int board[8][8], std::unordered_map<int, std::tuple<int, int>> coord, int pos);
+
+void move_piece(int start_pos, int end_pos, int board[8][8]);
+
+std::vector<int> get_moves(int board[8][8], int pos);
+
+std::vector<std::vector<int>> get_all_moves(int board[8][8]);
+
+std::vector<int> get_king_coord(int board[8][8]);

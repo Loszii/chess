@@ -3,7 +3,13 @@
 #include <vector>
 #include "movement.h"
 
-std::vector<int> get_moves(int board[8][8], std::unordered_map<int, std::tuple<int, int>> coord, int pos) {
+void move_piece(int start_pos, int end_pos, int board[8][8]) {
+    //given a start pos and end pos, moves piece at start to end
+    board[end_pos/10][end_pos%10] = board[start_pos/10][start_pos%10];
+    board[start_pos/10][start_pos%10] = 0;
+}
+
+std::vector<int> get_moves(int board[8][8], int pos) {
     //given a board, coord sys, and square return all possible indices to move
     //pos is a index of form i*10 + j
     //indices will be returned in same form
@@ -558,4 +564,41 @@ std::vector<int> get_moves(int board[8][8], std::unordered_map<int, std::tuple<i
                         break;
     }
     return moves;
+}
+
+std::vector<std::vector<int>> get_all_moves(int board[8][8]) {
+    //returns all possible moves given a board and turn, of form array of arrays were each array's first element is the piece moving (index) and rest are possible moves
+    std::vector<std::vector<int>> all_moves;
+    for (int i=0; i < 80; i+=10) { //iterate over entire board
+        for (int j=0; j < 8; j++) {
+            if (board[i/10][j] != 0) { //if piece
+                std::vector<int> moves;
+                moves.push_back(i+j); //adding position of peice to first
+                std::vector<int> temp = get_moves(board, i+j); //getting moves for the rest of arrray
+                for (int k=0; k < temp.size(); k++) {
+                    moves.push_back(temp[k]); //transfer to new array
+                }
+                all_moves.push_back(moves);
+            }
+        }
+    }
+
+    return all_moves;
+}
+
+std::vector<int> get_king_coord(int board[8][8]) {
+    //returns array of two integer, first one being whites king second one will be blacks, ints are pos of form i*10 + j
+    int white = 0;
+    int black = 0;
+    for (int i=0; i < 80; i+=10) { //iterate over entire board
+        for (int j=0; j < 8; j++) {
+            if (board[i/10][j] == 6) {
+                white = i+j;
+            } else if (board[i/10][j] == -6) {
+                black = i+j;
+            }
+        }
+    }
+    std::vector<int> kings = {white, black};
+    return kings;
 }

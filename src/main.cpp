@@ -81,7 +81,7 @@ void drawSelect(std::unordered_map<int, std::tuple<int, int>> coord, int pos, Te
     //shades in a square at the given pos of form i*10 + j
     int x = std::get<0>(coord[pos]);
     int y = std::get<1>(coord[pos]);
-    DrawTextureEx(select_texture, (Vector2){(float)x, (float)y}, 0, 1, (Color){255, 0, 0, 50});
+    DrawTextureEx(select_texture, (Vector2){(float)x, (float)y}, 0, 1, (Color){50, 0, 0, 100});
 }
 
 int get_index(int x, int y, std::unordered_map<int, std::tuple<int, int>> coord) {
@@ -104,11 +104,31 @@ int get_index(int x, int y, std::unordered_map<int, std::tuple<int, int>> coord)
     return -1; //cannot find index
 }
 
-void move_piece(int start_pos, int end_pos, int board[8][8]) {
-    //given a start pos and end pos, moves piece at start to end
-    board[end_pos/10][end_pos%10] = board[start_pos/10][start_pos%10];
-    board[start_pos/10][start_pos%10] = 0;
+//debug VVV func
+void print_all_move(std::vector<std::vector<int>> all) {
+    std::cout << '\n';
+    for (int i=0; i<all.size(); i++) {
+        std::cout << '\n';
+        for (int j=0; j < all[i].size(); j++) {
+            std::cout << all[i][j] << ", ";
+        }
+    }
 }
+
+void check_for_selection(int board[8][8], bool& select, int& select_coord, std::vector<int>& moves, bool white_turn, int pos) {
+    //checks if there is a move to select at given pos, if so sets select to true, coord to pos, sets moves to all moves of that piece, and adjusts the size of moves. all passed by ref
+    int i = pos/10;
+    int j = pos % 10;
+    if ((white_turn && board[i][j] > 0) || (!white_turn && board[i][j] < 0)) { //pos num 0-100 representing 2d array indices
+        //below code runs if there is a move to select
+        select = true;
+        select_coord = pos;
+        moves = get_moves(board, select_coord); //gets possible moves
+    } else {
+        select = false;
+    }
+}
+
 
 int main() {
     //main game loop
@@ -128,13 +148,15 @@ int main() {
         {4, 3, 2, 5, 6, 2, 3, 4},
     };
 
-    /*bool white_right_castle = true;
-    bool white_left_castle = true;
-    bool black_right_castle = true;
-    bool black_left_castle = true;*/
+    //implement castling here
+    int white_king_pos = 74;
+    bool white_check = false;
+    int black_king_pos = 4;
+    bool black_check = false;
     bool white_turn = true;
     std::vector<int> moves;
-    int move_cap;
+
+    std::vector<std::vector<int>> all_moves;
     
     std::unordered_map<int, Texture2D> skins = get_skins(); //skin textures maps num to Texture2D
     std::unordered_map<int, std::tuple<int, int>> coord = get_coord(); //mapping of indices to x-y coord
@@ -161,23 +183,27 @@ int main() {
         //shades in selected squares
         if (select) {
             drawSelect(coord, select_coord, select_texture);
-            for (int i=0; i < move_cap; i++) {
+            for (int i=0; i < moves.size(); i++) {
                 drawSelect(coord, moves[i], select_texture);
             }
         }
 
+        if (white_check) {
+            drawSelect(coord, white_king_pos, select_texture);
+        } else if (black_check) {
+            drawSelect(coord, black_king_pos, select_texture);
+        }
+
         EndDrawing();
 
-        //game functionality
+        //game functionality (maybe improve logic of below code)
         if (IsMouseButtonPressed(0)) {
             int pos = get_index(GetMouseX(), GetMouseY(), coord);
             if (pos != -1) { //-1 means not a square
-                int i = pos/10;
-                int j = pos % 10;
 
                 if (select) {
                     //check if mouse was clicked on a available move
-                    for (int i=0; i < move_cap; i++) {
+                    for (int i=0; i < moves.size(); i++) {
                         if (pos == moves[i]) {
                             move_piece(select_coord, moves[i], board);
                             if (white_turn) {
@@ -190,28 +216,37 @@ int main() {
                         }
                     }
                     if (select) { //if still selecting and didnt make viable move
-                        if ((white_turn && board[i][j] > 0) || (!white_turn && board[i][j] < 0)) { //pos num 0-100 representing 2d array indices
-                            select = true;
-                            select_coord = pos;
-                            moves = get_moves(board, coord, select_coord); //gets possible moves
-                            move_cap = moves.size();
-                        } else {
-                            select = false;
-                        }
+                        check_for_selection(board, select, select_coord, moves, white_turn, pos); //checks to find selection and sets moves to all moves
+                    } else { //else only runs if we broke out of above loop
+
+                            //first recalculate king pos
+                            std::vector<int> king_positions = get_king_coord(board);
+                            white_king_pos = king_positions[0];
+                            black_king_pos = king_positions[1];
+
+                            all_moves = get_all_moves(board);
+
+                            //check all moves and see if kings in check, disgregarding first index signifying piece pos
+                            white_check = false;
+                            black_check = false;
+                            for (int i=0; i < all_moves.size(); i++) {
+                                for (int j=1; j < all_moves[i].size(); j++) {
+                                    if (all_moves[i][j] == white_king_pos) {
+                                        white_check = true;
+                                    } else if (all_moves[i][j] == black_king_pos) {
+                                        black_check = true;
+                                    }
+                                }
+                            }
                     }
                 } else { //get pos of selection if piece
-                    if ((white_turn && board[i][j] > 0) || (!white_turn && board[i][j] < 0)) { //pos num 0-100 representing 2d array indices
-                        select = true;
-                        select_coord = pos;
-                        moves = get_moves(board, coord, select_coord); //gets possible moves
-                        move_cap = moves.size();
-                    } else {
-                        select = false;
-                    }
+                    check_for_selection(board, select, select_coord, moves, white_turn, pos);
                 }
+
             }
         }
     }
+
     //unloading textures
     UnloadTexture(board_texture);
     UnloadTexture(select_texture);
