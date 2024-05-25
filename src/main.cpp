@@ -12,6 +12,12 @@ const int SQUARE_WIDTH = 96;
 const int BEVEL = 8;
 const double SCALE = 0.75;
 
+const int FONT_SIZE = 100;
+
+/*in this program positions on the board are represented by i*10 + j for simplicity and stored as an integer
+this means accessing a position is [pos/10][pos%10] and saving a pos is i*10 + j*/
+
+
 //to do: checkmate, castling, en pessant
 //implementation: when in check iterate through all moves possible and see if player still in check, if so that move will not be added to moveList, if no moves left that break out of check then game over
 
@@ -151,6 +157,8 @@ int main() {
         {4, 3, 2, 5, 6, 2, 3, 4},
     };
 
+    int game_over = 0; //0 for none, 1 for white winning, 2 for black winning, 3 for stalemate
+
     //implement castling here
     int white_king_pos = 74;
     bool white_check = false;
@@ -160,6 +168,7 @@ int main() {
     std::vector<int> moves;
 
     std::vector<std::vector<int>> all_moves;
+    std::vector<std::vector<int>> all_legal_moves;
     
     std::unordered_map<int, Texture2D> skins = get_skins(); //skin textures maps num to Texture2D
     std::unordered_map<int, std::tuple<int, int>> coord = get_coord(); //mapping of indices to x-y coord
@@ -197,10 +206,22 @@ int main() {
             drawSelect(coord, black_king_pos, select_texture);
         }
 
+        if (game_over == 1 || game_over == 2) {
+            int text_width = MeasureText("CHECKMATE", FONT_SIZE);
+            int x = (SCREEN_WIDTH - text_width) / 2;
+            int y = (SCREEN_HEIGHT - FONT_SIZE) / 2;
+            DrawText("CHECKMATE", x, y, FONT_SIZE, RED);
+        } else if (game_over == 3) {
+            int text_width = MeasureText("STALEMATE", FONT_SIZE);
+            int x = (SCREEN_WIDTH - text_width) / 2;
+            int y = (SCREEN_HEIGHT - FONT_SIZE) / 2;
+            DrawText("STALEMATE", x, y, FONT_SIZE, RED);
+        }
+
         EndDrawing();
 
         //game functionality 
-        if (IsMouseButtonPressed(0)) {
+        if (game_over == 0 && IsMouseButtonPressed(0)) {
             int pos = get_index(GetMouseX(), GetMouseY(), coord);
             if (pos != -1) { //-1 means not a square
 
@@ -246,7 +267,38 @@ int main() {
 
                             //get all legal moves, if none then either draw or checkmate.
                             //checkmate if in check, draw if not in check
-
+                            all_legal_moves = get_all_moves(board, true);
+                            if (white_turn) {
+                                int white_available_moves = 0;
+                                for (int i=0; i < (int)all_legal_moves.size(); i++) {
+                                    int temp_pos = all_legal_moves[i][0];
+                                    if (board[temp_pos/10][temp_pos%10] > 0) { //is white
+                                        for (int j=1; j < (int)all_legal_moves[i].size(); j++) {
+                                            white_available_moves += 1;
+                                        }
+                                    }
+                                }
+                                if (white_available_moves == 0 && white_check) { //checked and no moves so lost
+                                    game_over = 2;
+                                } else if (white_available_moves == 0) { //no moves but not in check so draw
+                                    game_over = 3;
+                                }
+                            } else { //blacks turn
+                                int black_available_moves = 0;
+                                for (int i=0; i < (int)all_legal_moves.size(); i++) {
+                                    int temp_pos = all_legal_moves[i][0];
+                                    if (board[temp_pos/10][temp_pos%10] < 0) { //is black
+                                        for (int j=1; j < (int)all_legal_moves[i].size(); j++) {
+                                            black_available_moves += 1;
+                                        }
+                                    }
+                                }
+                                if (black_available_moves == 0 && black_check) {
+                                    game_over = 1;
+                                } else if (black_available_moves == 0) {
+                                    game_over = 3;
+                                }
+                            }
 
 
                     }
