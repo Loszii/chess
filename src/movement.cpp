@@ -2,6 +2,7 @@
 #include <tuple>
 #include <vector>
 #include "movement.h"
+#include <iostream>
 
 void move_piece(int start_pos, int end_pos, int board[8][8]) {
     //given a start pos and end pos, moves piece at start to end
@@ -9,7 +10,7 @@ void move_piece(int start_pos, int end_pos, int board[8][8]) {
     board[start_pos/10][start_pos%10] = 0;
 }
 
-std::vector<int> get_moves(int board[8][8], int pos) {
+std::vector<int> get_moves(int board[8][8], int pos, bool legal_only) {
     //given a board, coord sys, and square return all possible indices to move
     //pos is a index of form i*10 + j
     //indices will be returned in same form
@@ -17,6 +18,12 @@ std::vector<int> get_moves(int board[8][8], int pos) {
     int i = pos / 10;
     int j = pos % 10;
     int piece = board[i][j];
+    bool white_to_move;
+    if (piece > 0) {
+        white_to_move = true;
+    } else {
+        white_to_move = false;
+    }
     switch (piece) {
 
         case -1://black pawn
@@ -563,19 +570,95 @@ std::vector<int> get_moves(int board[8][8], int pos) {
                         }
                         break;
     }
-    return moves;
+    
+
+    //need to do this whether they are in check or not since a player can move a piece and reveal a check
+    if (legal_only) {
+            if (white_to_move) {
+                std::vector<int> final_moves;
+                //for each move in moves make a new copy of board, make the move, and check if still in check
+                for (int k=0; k < (int)moves.size(); k++) {
+                    bool to_remove = false;
+                    int board_copy[8][8]; //copying board
+                    for (int l=0; l < 8; l++) {
+                        for (int m=0; m < 8; m++) {
+                            board_copy[l][m] = board[l][m];
+                        }
+                    }
+                    move_piece(pos, moves[k], board_copy); //makes piece move on our copy
+
+                    //check if board_copy has a check now
+            
+                    //first recalculate king pos
+                    std::vector<int> king_positions = get_king_coord(board_copy);
+                    int white_king_pos = king_positions[0];
+
+                    std::vector<std::vector<int>> all_moves = get_all_moves(board_copy, false); //set both checks to false to prevent recursive call (only care if still in check)
+
+                    //check all moves and see if kings in check, disgregarding first index signifying piece pos
+                    for (int l=0; l < (int)all_moves.size(); l++) {
+                        for (int m=1; m < (int)all_moves[l].size(); m++) {
+                            if (all_moves[l][m] == white_king_pos) { //still in check
+                                to_remove = true;
+                                break;
+                            }
+                        }
+                    }
+                    if (!to_remove) {
+                        final_moves.push_back(moves[k]); //passed all tests
+                    }
+                }
+
+                return final_moves;
+
+        } else { //same but for black
+            std::vector<int> final_moves;
+            for (int k=0; k < (int)moves.size(); k++) {
+                bool to_remove = false;
+                int board_copy[8][8];
+                for (int l=0; l < 8; l++) {
+                    for (int m=0; m < 8; m++) {
+                        board_copy[l][m] = board[l][m];
+                    }
+                }
+                move_piece(pos, moves[k], board_copy);
+                std::vector<int> king_positions = get_king_coord(board_copy);
+                int black_king_pos = king_positions[1];
+
+                std::vector<std::vector<int>> all_moves = get_all_moves(board_copy, false);
+
+                for (int l=0; l < (int)all_moves.size(); l++) {
+                    for (int m=1; m < (int)all_moves[l].size(); m++) {
+                        if (all_moves[l][m] == black_king_pos) { //still in check
+                            to_remove = true;
+                            break;
+                        }
+                    }
+                }
+                if (!to_remove) {
+                    final_moves.push_back(moves[k]); //passed all tests
+                }
+            }
+            return final_moves;
+
+        }
+    } else {
+        return moves;
+    }
 }
 
-std::vector<std::vector<int>> get_all_moves(int board[8][8]) {
+//prob remove white_check param
+std::vector<std::vector<int>> get_all_moves(int board[8][8], bool legal_only) {
     //returns all possible moves given a board and turn, of form array of arrays were each array's first element is the piece moving (index) and rest are possible moves
+    //returns all moves even illegal ones
     std::vector<std::vector<int>> all_moves;
     for (int i=0; i < 80; i+=10) { //iterate over entire board
         for (int j=0; j < 8; j++) {
             if (board[i/10][j] != 0) { //if piece
                 std::vector<int> moves;
                 moves.push_back(i+j); //adding position of peice to first
-                std::vector<int> temp = get_moves(board, i+j); //getting moves for the rest of arrray
-                for (int k=0; k < temp.size(); k++) {
+                std::vector<int> temp = get_moves(board, i+j, legal_only); //getting moves for the rest of arrray
+                for (int k=0; k < (int)temp.size(); k++) {
                     moves.push_back(temp[k]); //transfer to new array
                 }
                 all_moves.push_back(moves);

@@ -12,6 +12,9 @@ const int SQUARE_WIDTH = 96;
 const int BEVEL = 8;
 const double SCALE = 0.75;
 
+//to do: checkmate, castling, en pessant
+//implementation: when in check iterate through all moves possible and see if player still in check, if so that move will not be added to moveList, if no moves left that break out of check then game over
+
 std::unordered_map<int, Texture2D> get_skins() {
     //returns a map that takes in integers representing chess pieces and returns their Texture
     /*key:
@@ -107,9 +110,9 @@ int get_index(int x, int y, std::unordered_map<int, std::tuple<int, int>> coord)
 //debug VVV func
 void print_all_move(std::vector<std::vector<int>> all) {
     std::cout << '\n';
-    for (int i=0; i<all.size(); i++) {
+    for (int i=0; i < (int)all.size(); i++) {
         std::cout << '\n';
-        for (int j=0; j < all[i].size(); j++) {
+        for (int j=0; j < (int)all[i].size(); j++) {
             std::cout << all[i][j] << ", ";
         }
     }
@@ -123,7 +126,7 @@ void check_for_selection(int board[8][8], bool& select, int& select_coord, std::
         //below code runs if there is a move to select
         select = true;
         select_coord = pos;
-        moves = get_moves(board, select_coord); //gets possible moves
+        moves = get_moves(board, select_coord, true); //gets possible moves
     } else {
         select = false;
     }
@@ -183,7 +186,7 @@ int main() {
         //shades in selected squares
         if (select) {
             drawSelect(coord, select_coord, select_texture);
-            for (int i=0; i < moves.size(); i++) {
+            for (int i=0; i < (int)moves.size(); i++) {
                 drawSelect(coord, moves[i], select_texture);
             }
         }
@@ -196,14 +199,14 @@ int main() {
 
         EndDrawing();
 
-        //game functionality (maybe improve logic of below code)
+        //game functionality 
         if (IsMouseButtonPressed(0)) {
             int pos = get_index(GetMouseX(), GetMouseY(), coord);
             if (pos != -1) { //-1 means not a square
 
                 if (select) {
                     //check if mouse was clicked on a available move
-                    for (int i=0; i < moves.size(); i++) {
+                    for (int i=0; i < (int)moves.size(); i++) {
                         if (pos == moves[i]) {
                             move_piece(select_coord, moves[i], board);
                             if (white_turn) {
@@ -217,20 +220,22 @@ int main() {
                     }
                     if (select) { //if still selecting and didnt make viable move
                         check_for_selection(board, select, select_coord, moves, white_turn, pos); //checks to find selection and sets moves to all moves
-                    } else { //else only runs if we broke out of above loop
+                    } else {
+
+                            //code to run after breaking out of loop (moving piece)
 
                             //first recalculate king pos
                             std::vector<int> king_positions = get_king_coord(board);
                             white_king_pos = king_positions[0];
                             black_king_pos = king_positions[1];
 
-                            all_moves = get_all_moves(board);
+                            all_moves = get_all_moves(board, false);
 
                             //check all moves and see if kings in check, disgregarding first index signifying piece pos
                             white_check = false;
                             black_check = false;
-                            for (int i=0; i < all_moves.size(); i++) {
-                                for (int j=1; j < all_moves[i].size(); j++) {
+                            for (int i=0; i < (int)all_moves.size(); i++) {
+                                for (int j=1; j < (int)all_moves[i].size(); j++) {
                                     if (all_moves[i][j] == white_king_pos) {
                                         white_check = true;
                                     } else if (all_moves[i][j] == black_king_pos) {
@@ -238,6 +243,12 @@ int main() {
                                     }
                                 }
                             }
+
+                            //get all legal moves, if none then either draw or checkmate.
+                            //checkmate if in check, draw if not in check
+
+
+
                     }
                 } else { //get pos of selection if piece
                     check_for_selection(board, select, select_coord, moves, white_turn, pos);
