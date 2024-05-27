@@ -7,11 +7,9 @@
 
 const int SCREEN_WIDTH = 784;
 const int SCREEN_HEIGHT = 784;
-
 const int SQUARE_WIDTH = 96;
 const int BEVEL = 8;
 const double SCALE = 0.75;
-
 const int FONT_SIZE = 100;
 
 //to do: draw if no material and pawn promotion as well
@@ -33,7 +31,6 @@ std::unordered_map<int, Texture2D> get_skins() {
     4: rook
     5: queen
     6: king*/
-    
     std::unordered_map<int, Texture2D> skins;
     skins[1] = LoadTexture("../res/w-pawn.png");
     skins[2] = LoadTexture("../res/w-bishop.png");
@@ -41,14 +38,12 @@ std::unordered_map<int, Texture2D> get_skins() {
     skins[4] = LoadTexture("../res/w-rook.png");
     skins[5] = LoadTexture("../res/w-queen.png");
     skins[6] = LoadTexture("../res/w-king.png");
-
     skins[-1] = LoadTexture("../res/b-pawn.png");
     skins[-2] = LoadTexture("../res/b-bishop.png");
     skins[-3] = LoadTexture("../res/b-knight.png");
     skins[-4] = LoadTexture("../res/b-rook.png");
     skins[-5] = LoadTexture("../res/b-queen.png");
     skins[-6] = LoadTexture("../res/b-king.png");
-
     return skins;
 }
 
@@ -66,7 +61,6 @@ std::unordered_map<int, std::tuple<int, int>> get_coord() {
             x += SQUARE_WIDTH;
         }
     }
-    
     return coord;
 }
 
@@ -95,7 +89,7 @@ void drawSelect(std::unordered_map<int, std::tuple<int, int>> coord, int pos, Te
 }
 
 int get_index(int x, int y, std::unordered_map<int, std::tuple<int, int>> coord) {
-    //takes in mouse x and y pos and returns i*10 + j
+    //takes in mouse x and y pos and returns i*10 + j position
     int top;
     int bottom;
     int left;
@@ -114,8 +108,8 @@ int get_index(int x, int y, std::unordered_map<int, std::tuple<int, int>> coord)
     return -1; //cannot find index
 }
 
-//debug VVV func
 void print_all_move(std::vector<std::vector<int>> all) {
+    //prints all integers within a 2d vector to cout
     std::cout << '\n';
     for (int i=0; i < (int)all.size(); i++) {
         std::cout << '\n';
@@ -125,124 +119,19 @@ void print_all_move(std::vector<std::vector<int>> all) {
     }
 }
 
-void check_for_selection(int board[8][8], bool& select, int& select_coord, std::vector<int>& moves, bool white_turn, int pos, bool castling[8]) {
+void check_for_selection(int board[8][8], bool& select, int& select_coord, std::vector<int>& moves, bool w_turn, int pos, bool w_castle[4], bool b_castle[4]) {
     //checks if there is a move to select at given pos, if so sets select to true, coord to pos, sets moves to all moves of that piece, and adjusts the size of moves. all passed by ref
     int i = pos/10;
     int j = pos % 10;
-    if ((white_turn && board[i][j] > 0) || (!white_turn && board[i][j] < 0)) { //pos num 0-100 representing 2d array indices
+    if ((w_turn && board[i][j] > 0) || (!w_turn && board[i][j] < 0)) { //pos num 0-100 representing 2d array indices
         //below code runs if there is a move to select
         select = true;
         select_coord = pos;
-        moves = get_moves(board, select_coord, true, castling); //gets possible moves
+        moves = get_trajectory(board, select_coord, w_castle, b_castle); //gets possible moves
     } else {
         select = false;
     }
 }
-
-void check_castle_conditions(int board[8][8], bool castling[8], std::vector<std::vector<int>> all_moves) {
-    //given a board and array of castling conditions, changes them dependant upon situation
-
-    //for castling: have 8 variables, in array [w_r_temp, w_r_perm, w_l_temp, w_l_perm, b_r_temp, b_r_perm, b_l_temp, b_l_perm]
-
-    //first white right side
-    //perms
-    if (board[7][4] != 6) { //king moved, all perm become false, dont undo these
-        castling[1] = false;
-        castling[3] = false;
-    }
-    if (board[7][7] != 4) { //right rook
-        castling[1] = false;
-    }
-    if (board[7][0] != 4) { //left rook
-        castling[3] = false;
-    }
-    //temps
-    //all spaces between must be empty and not under attack
-
-    castling[0] = true;
-    castling[2] = true;
-
-    if (board[7][5] != 0 || board[7][6] != 0) { //piece in the way
-        castling[0] = false;
-    }
-    if (board[7][1] != 0 || board[7][2] != 0 || board[7][3] != 0) {
-        castling[2] = false;
-    }
-
-    if (castling[0] || castling[2]) { //if both are not already both false
-        for (int i=0; i < (int)all_moves.size(); i++) { //iterate through all moves to see if a piece can attack square
-
-            int pos = all_moves[i][0];
-            if (board[pos/10][pos%10] < 0) { //only checking pieces if the original is black (enemy)
-                for (int j=1; j < (int)all_moves[i].size(); j++) {
-                    if (all_moves[i][j] == 75 || all_moves[i][j] == 76) {
-                        castling[0] = false;
-                    } else if (all_moves[i][j] == 72 || all_moves[i][j] == 73) {
-                        castling[2] = false;
-                    }
-                    if (all_moves[i][j] == 74) {
-                        castling[0] = false;
-                        castling[2] = false;
-                        break;
-                    }
-                }
-                if (!(castling[0] || castling[2])) { //both temp already evaluated to be false
-                    break;
-                }
-            }
-        }
-    }
-
-    //black side
-    //perms
-    if (board[0][4] != -6) { //king moved, all perm become false, dont undo these
-        castling[5] = false;
-        castling[7] = false;
-    }
-    if (board[0][7] != -4) { //right rook
-        castling[5] = false;
-    }
-    if (board[0][0] != -4) { //left rook
-        castling[7] = false;
-    }
-
-    //temps
-    castling[4] = true;
-    castling[6] = true;
-
-    if (board[0][5] != 0 || board[0][6] != 0) { //piece in the way
-        castling[4] = false;
-    }
-    if (board[0][1] != 0 || board[0][2] != 0 || board[0][3] != 0) {
-        castling[6] = false;
-    }
-
-    if (castling[4] || castling[6]) { //both temp already evaluated to be false
-        for (int i=0; i < (int)all_moves.size(); i++) { //iterate through all moves to see if a piece can attack square
-            int pos = all_moves[i][0];
-
-            if (board[pos/10][pos%10] > 0) {
-                for (int j=1; j < (int)all_moves[i].size(); j++) {
-                    if (all_moves[i][j] == 5 || all_moves[i][j] == 6) {
-                        castling[4] = false;
-                    } else if (all_moves[i][j] == 2 || all_moves[i][j] == 3) {
-                        castling[6] = false;
-                    }
-                    if (all_moves[i][j] == 4) { //king in check
-                        castling[4] = false;
-                        castling[6] = false;
-                        break;
-                    }
-                }
-                if (!(castling[4] || castling[6])) { //both temp already evaluated to be false
-                    break;
-                }
-            }
-        }
-    }
-
-}
-
 
 int main() {
     //main game loop
@@ -263,18 +152,17 @@ int main() {
     };
 
     int game_over = 0; //0 for none, 1 for white winning, 2 for black winning, 3 for stalemate
-
-    bool castling[8] = {false, true, false, true, false, true, false, true};
-
-    int white_king_pos = 74;
-    bool white_check = false;
-    int black_king_pos = 4;
-    bool black_check = false;
-    bool white_turn = true;
+    bool w_turn = true;
+    bool w_castle[4] = {false, true, false, true}; //[right temp, right perm, left temp, left perm]
+    bool b_castle[4] = {false, true, false, true};
+    int w_king_pos = 74;
+    int b_king_pos = 4;
+    bool w_check = false;
+    bool b_check = false;
     std::vector<int> moves;
 
-    std::vector<std::vector<int>> all_moves;
-    std::vector<std::vector<int>> all_legal_moves;
+    /*std::vector<std::vector<int>> all_moves;
+    std::vector<std::vector<int>> all_legal_moves;*/
     
     std::unordered_map<int, Texture2D> skins = get_skins(); //skin textures maps num to Texture2D
     std::unordered_map<int, std::tuple<int, int>> coord = get_coord(); //mapping of indices to x-y coord
@@ -306,12 +194,14 @@ int main() {
             }
         }
 
-        if (white_check) {
-            drawSelect(coord, white_king_pos, select_texture);
-        } else if (black_check) {
-            drawSelect(coord, black_king_pos, select_texture);
+        //check notifier
+        if (w_check) {
+            drawSelect(coord, w_king_pos, select_texture);
+        } else if (b_check) {
+            drawSelect(coord, b_king_pos, select_texture);
         }
 
+        //checking for game over and displaying end game status
         if (game_over == 1 || game_over == 2) {
             int text_width = MeasureText("CHECKMATE", FONT_SIZE);
             int x = (SCREEN_WIDTH - text_width) / 2;
@@ -336,37 +226,40 @@ int main() {
                     for (int i=0; i < (int)moves.size(); i++) {
                         if (pos == moves[i]) {
                             move_piece(select_coord, moves[i], board);
-                            if (white_turn) {
-                                white_turn = false;
+                            if (w_turn) {
+                                w_turn = false;
                             } else {
-                                white_turn = true;
+                                w_turn = true;
                             }
                             select = false;
                             break;
                         }
                     }
                     if (select) { //if still selecting and didnt make viable move
-                        check_for_selection(board, select, select_coord, moves, white_turn, pos, castling); //checks to find selection and sets moves to all moves
+                        check_for_selection(board, select, select_coord, moves, w_turn, pos, w_castle, b_castle); //checks to find selection and sets moves to all moves
                     } else {
 
                             //code to run after breaking out of loop (moving piece)
 
+
+
+                            /*
                             //first recalculate king pos
                             std::vector<int> king_positions = get_king_coord(board);
-                            white_king_pos = king_positions[0];
-                            black_king_pos = king_positions[1];
+                            w_king_pos = king_positions[0];
+                            b_king_pos = king_positions[1];
 
                             all_moves = get_all_moves(board, false, castling);
 
                             //check all moves and see if kings in check, disgregarding first index signifying piece pos
-                            white_check = false;
-                            black_check = false;
+                            w_check = false;
+                            b_check = false;
                             for (int i=0; i < (int)all_moves.size(); i++) {
                                 for (int j=1; j < (int)all_moves[i].size(); j++) {
-                                    if (all_moves[i][j] == white_king_pos) {
-                                        white_check = true;
-                                    } else if (all_moves[i][j] == black_king_pos) {
-                                        black_check = true;
+                                    if (all_moves[i][j] == w_king_pos) {
+                                        w_check = true;
+                                    } else if (all_moves[i][j] == b_king_pos) {
+                                        b_check = true;
                                     }
                                 }
                             }
@@ -374,7 +267,7 @@ int main() {
                             //get all legal moves, if none then either draw or checkmate.
                             //checkmate if in check, draw if not in check
                             all_legal_moves = get_all_moves(board, true, castling);
-                            if (white_turn) {
+                            if (w_turn) {
                                 int white_available_moves = 0;
                                 for (int i=0; i < (int)all_legal_moves.size(); i++) {
                                     int temp_pos = all_legal_moves[i][0];
@@ -384,7 +277,7 @@ int main() {
                                         }
                                     }
                                 }
-                                if (white_available_moves == 0 && white_check) { //checked and no moves so lost
+                                if (white_available_moves == 0 && w_check) { //checked and no moves so lost
                                     game_over = 2;
                                 } else if (white_available_moves == 0) { //no moves but not in check so draw
                                     game_over = 3;
@@ -399,7 +292,7 @@ int main() {
                                         }
                                     }
                                 }
-                                if (black_available_moves == 0 && black_check) {
+                                if (black_available_moves == 0 && b_check) {
                                     game_over = 1;
                                 } else if (black_available_moves == 0) {
                                     game_over = 3;
@@ -409,11 +302,11 @@ int main() {
                             //check castling conditions below
                             if (castling[1] || castling[3] || castling[5] || castling[7]) { //if all perms false no point
                                 check_castle_conditions(board, castling, all_moves);
-                            }
+                            }*/
 
                     }
                 } else { //get pos of selection if piece
-                    check_for_selection(board, select, select_coord, moves, white_turn, pos, castling);
+                    check_for_selection(board, select, select_coord, moves, w_turn, pos, w_castle, b_castle);
                 }
 
             }
