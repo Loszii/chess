@@ -13,6 +13,7 @@ const double SCALE = 0.75;
 const int FONT_SIZE = 100;
 
 //to do: draw if no material and pawn promotion as well
+//to do: make test cases for edge cases like pawn promotion, en passant, castling and legality of moves
 
 //for en pessant, can only be one possible square at time, so give get_moves a position integer representing a viable en pessant square,
 //for pawns check if their diagonals are this position, if so add the move to get moves and remove the pawn below (will take new piece moving code)
@@ -119,15 +120,15 @@ void print_all_move(std::vector<std::vector<int>> all) {
     }
 }
 
-void check_for_selection(int board[8][8], bool& select, int& select_coord, std::vector<int>& moves, bool w_turn, int pos, bool w_castle[4], bool b_castle[4]) {
+void check_for_selection(int board[8][8], bool& select, int& select_pos, std::vector<int>& moves, bool w_turn, int pos, bool w_castle[4], bool b_castle[4], int en_passant) {
     //checks if there is a move to select at given pos, if so sets select to true, coord to pos, sets moves to all moves of that piece, and adjusts the size of moves. all passed by ref
     int i = pos/10;
     int j = pos % 10;
     if ((w_turn && board[i][j] > 0) || (!w_turn && board[i][j] < 0)) { //pos num 0-100 representing 2d array indices
         //below code runs if there is a move to select
         select = true;
-        select_coord = pos;
-        moves = get_legal_moves(board, select_coord, w_castle, b_castle, w_turn); //gets possible moves
+        select_pos = pos;
+        moves = get_legal_moves(board, select_pos, w_castle, b_castle, w_turn, en_passant); //gets possible moves
     } else {
         select = false;
     }
@@ -155,10 +156,12 @@ int main() {
     bool w_turn = true;
     bool w_castle[4] = {false, true, false, true}; //[right temp, right perm, left temp, left perm]
     bool b_castle[4] = {false, true, false, true};
+    int en_passant = -1; //-1 if no squares available, if there is then this will be the pos
     int w_king_pos = 74;
     int b_king_pos = 4;
     bool w_check = false;
     bool b_check = false;
+    int past_moves[2] = {0, 0}; //first is start position second is last position of the previous move made on board
     std::vector<int> moves;
     
     std::unordered_map<int, Texture2D> skins = get_skins(); //skin textures maps num to Texture2D
@@ -171,7 +174,7 @@ int main() {
     Texture2D board_texture = LoadTexture("../res/board.png");
     Texture2D select_texture = LoadTexture("../res/selector.png");
     bool select = false;
-    int select_coord;
+    int select_pos; //position of select in form i*10 + j
 
     //Game loop
     while (!WindowShouldClose()) {
@@ -185,7 +188,7 @@ int main() {
 
         //shades in selected squares
         if (select) {
-            drawSelect(coord, select_coord, select_texture);
+            drawSelect(coord, select_pos, select_texture);
             for (int i=0; i < (int)moves.size(); i++) {
                 drawSelect(coord, moves[i], select_texture);
             }
@@ -222,7 +225,9 @@ int main() {
                     //check if mouse was clicked on a available move
                     for (int i=0; i < (int)moves.size(); i++) {
                         if (pos == moves[i]) {
-                            move_piece(select_coord, moves[i], board);
+                            past_moves[0] = select_pos;
+                            past_moves[1] = pos;
+                            move_piece(select_pos, pos, board);
                             if (w_turn) {
                                 w_turn = false;
                             } else {
@@ -233,7 +238,7 @@ int main() {
                         }
                     }
                     if (select) { //if still selecting and didnt make viable move
-                        check_for_selection(board, select, select_coord, moves, w_turn, pos, w_castle, b_castle); //checks to find selection and sets moves to all moves
+                        check_for_selection(board, select, select_pos, moves, w_turn, pos, w_castle, b_castle, en_passant); //checks to find selection and sets moves to all moves
                     } else {
 
                             //code to run after breaking out of loop (moving piece)
@@ -244,15 +249,15 @@ int main() {
                             //true to check white and false for black
                             w_check = in_check(board, true);
                             b_check = in_check(board, false);
+                            en_passant = check_en_passant(board, past_moves[0], past_moves[1]);
                             check_castle_conditions(board, w_castle, true);
                             check_castle_conditions(board, b_castle, false);
-                            check_game_state(board, game_over, w_check, b_check, w_turn);
+                            check_game_state(board, game_over, w_check, b_check, w_turn, en_passant);
 
                     }
                 } else { //get pos of selection if piece
-                    check_for_selection(board, select, select_coord, moves, w_turn, pos, w_castle, b_castle);
+                    check_for_selection(board, select, select_pos, moves, w_turn, pos, w_castle, b_castle, en_passant);
                 }
-
             }
         }
     }

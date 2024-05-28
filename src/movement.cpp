@@ -4,33 +4,61 @@
 #include "movement.h"
 #include <iostream>
 
-//can disable en passant when we disable castle as well since nether will have king in trajectory
-
 void move_piece(int start_pos, int end_pos, int board[8][8]) {
     //given a start pos and end pos, moves piece at start to end
-
-    //for castling: white first
-    if (board[start_pos/10][start_pos%10] == 6) { //is king
-        if (start_pos == 74 && end_pos == 76) {
+    int i = start_pos/10;
+    int j = start_pos%10;
+    //for castling:
+    int row;
+    int side;
+    bool check_castle = false;
+    if (board[i][j] == 6) { //is king
+        row = 70;
+        side = 1;
+        check_castle = true;
+    } else if (board[i][j] == -6) {
+        row = 0;
+        side = -1;
+        check_castle = true;
+    }
+    if (check_castle) {
+        if (start_pos == row + 4 && end_pos == row + 6) {
             //right castle so move rook
-            board[7][5] = 4;
-            board[7][7] = 0;
-        } else if (start_pos == 74 && end_pos == 72) {
+            board[row/10][5] = side * 4;
+            board[row/10][7] = 0;
+        } else if (start_pos == row + 4 && end_pos == row + 2) {
             //left castle so move rook
-            board[7][3] = 4;
-            board[7][0] = 0;
+            board[row/10][3] = side * 4;
+            board[row/10][0] = 0;
         }
     }
-    //black
-    if (board[start_pos/10][start_pos%10] == -6) { //is king
-        if (start_pos == 4 && end_pos == 6) {
-            //right castle so move rook
-            board[0][5] = -4;
-            board[0][7] = 0;
-        } else if (start_pos == 4 && end_pos == 2) {
-            //left castle so move rook
-            board[0][3] = -4;
-            board[0][0] = 0;
+
+    //en passant
+    //if pawn moving diagonal and square is empty then make en_passant move
+    int dir;
+    int u_bound;
+    bool check_en_passant = false;
+    if (board[i][j] == 1) { //white pawn
+        dir = -1;
+        u_bound = 0;
+        check_en_passant = true;
+    } else if (board[i][j] == -1) {
+        dir = 1;
+        u_bound = 7;
+        check_en_passant = true;
+    }
+    if (check_en_passant) {
+        if (i != u_bound) { //diags
+            if (j > 0) {
+                if (end_pos == (i+dir)*10 + (j-1) && board[i+dir][j-1] == 0) {
+                    board[end_pos/10 - dir][end_pos%10] = 0;
+                }
+            }
+            if (j < 7) {
+                if (end_pos == (i+dir)*10 + j+1 && board[i+dir][j+1] == 0) {
+                    board[end_pos/10 - dir][end_pos%10] = 0;
+                }
+            }
         }
     }
 
@@ -39,7 +67,7 @@ void move_piece(int start_pos, int end_pos, int board[8][8]) {
     board[start_pos/10][start_pos%10] = 0;
 }
 
-void get_pawn_moves(int board[8][8], int i, int j, bool w_turn, std::vector<int>& moves) {
+void get_pawn_moves(int board[8][8], int i, int j, bool w_turn, std::vector<int>& moves, int en_passant) {
     int u_bound;
     int dir;
     int start_row;
@@ -60,16 +88,16 @@ void get_pawn_moves(int board[8][8], int i, int j, bool w_turn, std::vector<int>
     }
     if (i != u_bound) { //diags
         if (j > 0) {
-            if (w_turn && board[i+dir][j-1] < 0) {
+            if (w_turn && (board[i+dir][j-1] < 0 || ((i+dir)*10) + (j-1) == en_passant)) {
                 moves.push_back((i+dir)*10 + (j-1));
-            } else if (!w_turn && board[i+dir][j-1] > 0) {
+            } else if (!w_turn && (board[i+dir][j-1] > 0 || ((i+dir)*10) + (j-1) == en_passant)) {
                 moves.push_back((i+dir)*10 + (j-1));
             }
         }
         if (j < 7) {
-            if (w_turn && board[i+dir][j+1] < 0) {
+            if (w_turn && (board[i+dir][j+1] < 0 || ((i+dir)*10) + (j+1) == en_passant)) {
                 moves.push_back((i+dir)*10 + (j+1));
-            } else if (!w_turn && board[i+dir][j+1] > 0) {
+            } else if (!w_turn && (board[i+dir][j+1] > 0 || ((i+dir)*10) + (j+1) == en_passant)) {
                 moves.push_back((i+dir)*10 + (j+1));
             }
         }
@@ -247,7 +275,7 @@ void get_king_moves(int board[8][8], int i, int j, bool w_turn, std::vector<int>
     }
 }
 
-std::vector<int> get_trajectory(int board[8][8], int pos, bool w_castle[4], bool b_castle[4]) {
+std::vector<int> get_trajectory(int board[8][8], int pos, bool w_castle[4], bool b_castle[4], int en_passant) {
     //given a board, coord sys, and square return all possible indices to move, legal or not
     //pos is a index of form i*10 + j
     //indices will be returned in same form
@@ -260,11 +288,11 @@ std::vector<int> get_trajectory(int board[8][8], int pos, bool w_castle[4], bool
     switch (piece) {
 
         case -1://black pawn
-            get_pawn_moves(board, i, j, false, moves);
+            get_pawn_moves(board, i, j, false, moves, en_passant);
             break;
         
         case 1://white pawn
-            get_pawn_moves(board, i, j, true, moves);
+            get_pawn_moves(board, i, j, true, moves, en_passant);
             break;
 
         case -2://black bishop
@@ -312,7 +340,7 @@ std::vector<int> get_trajectory(int board[8][8], int pos, bool w_castle[4], bool
     return moves;
 }
 
-std::vector<int> get_all_trajectories(int board[8][8], bool w_castle[4], bool b_castle[4], bool w_turn) {
+std::vector<int> get_all_trajectories(int board[8][8], bool w_castle[4], bool b_castle[4], bool w_turn, int en_passant) {
     //returns all possible trajectores of white or black, if w_turn is true then returns all of blacks trajectories, since 
     //this function is mainly used in calculating enemy moves and preventing psuedo legal ones
     //the return is an array of all possible moves for opponent
@@ -320,7 +348,7 @@ std::vector<int> get_all_trajectories(int board[8][8], bool w_castle[4], bool b_
     for (int i=0; i < 80; i+=10) { //iterate over entire board
         for (int j=0; j < 8; j++) {
             if ((w_turn && board[i/10][j] < 0) || (!w_turn && board[i/10][j] > 0)) { //determines black or white side
-                std::vector<int> trajectory = get_trajectory(board, i+j, w_castle, b_castle); //get all piece
+                std::vector<int> trajectory = get_trajectory(board, i+j, w_castle, b_castle, en_passant); //get all piece
                 for (int k=0; k < (int)trajectory.size(); k++) {
                     all_trajectories.push_back(trajectory[k]); //add to final array
                 }
@@ -330,12 +358,12 @@ std::vector<int> get_all_trajectories(int board[8][8], bool w_castle[4], bool b_
     return all_trajectories;
 }
 
-std::vector<int> get_legal_moves(int board[8][8], int pos, bool w_castle[4], bool b_castle[4], bool w_turn) {
+std::vector<int> get_legal_moves(int board[8][8], int pos, bool w_castle[4], bool b_castle[4], bool w_turn, int en_passant) {
     //given a position in form i*10 + j of a piece, returns all legal moves of piece at pos by taking into consideration enemy trajectories
     //this function uses get_trajectory() to get current piece moves, then makes the move on a board copy and evaluates if this leaves the 
     //player in check, if so it removes it, if w_turn is true then the piece at pos must be white
     std::vector<int> legal_moves;
-    std::vector<int> current_moves = get_trajectory(board, pos, w_castle, b_castle);
+    std::vector<int> current_moves = get_trajectory(board, pos, w_castle, b_castle, en_passant);
     for (int i=0; i < (int)current_moves.size(); i++) {
         int board_copy[8][8];
         //copy the board
@@ -353,14 +381,14 @@ std::vector<int> get_legal_moves(int board[8][8], int pos, bool w_castle[4], boo
     return legal_moves;
 }
 
-std::vector<int> get_all_legal_moves(int board[8][8], bool w_castle[4], bool b_castle[4], bool w_turn) {
+std::vector<int> get_all_legal_moves(int board[8][8], bool w_castle[4], bool b_castle[4], bool w_turn, int en_passant) {
     //returns all possible legal moves of white or black, if w_turn is true then returns all of whites legal moves
     //the return is an array of all possible moves
     std::vector<int> all_legal_moves;
     for (int i=0; i < 80; i+=10) { //iterate over entire board
         for (int j=0; j < 8; j++) {
             if ((w_turn && board[i/10][j] > 0) || (!w_turn && board[i/10][j] < 0)) { //determines black or white side
-                std::vector<int> legal_moves = get_legal_moves(board, i+j, w_castle, b_castle, w_turn); //get all piece
+                std::vector<int> legal_moves = get_legal_moves(board, i+j, w_castle, b_castle, w_turn, en_passant); //get all piece
                 for (int k=0; k < (int)legal_moves.size(); k++) {
                     all_legal_moves.push_back(legal_moves[k]); //add to final array
                 }
@@ -391,7 +419,8 @@ bool in_check(int board[8][8], bool w_turn) {
     //given a board and a turn, if w_turn is true check is white is in check
     std::vector<int> king_positions = get_king_coord(board);
     bool disable_castle[4] = {false}; //a king can never take another king with check
-    std::vector<int> all_trajectories = get_all_trajectories(board, disable_castle, disable_castle, w_turn);
+    int disable_en_passant = -1; //an en passant can never capture a king
+    std::vector<int> all_trajectories = get_all_trajectories(board, disable_castle, disable_castle, w_turn, disable_en_passant);
     int king_pos;
     if (w_turn) {
         king_pos = king_positions[0];
@@ -411,7 +440,8 @@ void check_castle_conditions(int board[8][8], bool castle[4], bool w_turn) {
     //for castling: have 4 variables, in array [r_temp, r_perm, l_temp, l_perm] for each side, here we are given the side whose turn it is
 
     bool disable_castle[4] = {false}; //a castle of opponent cannot impact other castle opportunity
-    std::vector<int> all_trajectories = get_all_trajectories(board, disable_castle, disable_castle, w_turn);
+    int disable_en_passant = -1; //an en passant cannot interfere with castling
+    std::vector<int> all_trajectories = get_all_trajectories(board, disable_castle, disable_castle, w_turn, disable_en_passant);
 
     //white
     //perms
@@ -463,13 +493,37 @@ void check_castle_conditions(int board[8][8], bool castle[4], bool w_turn) {
 
 }
 
-void check_game_state(int board[8][8], int& game_over, bool w_check, bool b_check, bool w_turn) {
+void check_game_state(int board[8][8], int& game_over, bool w_check, bool b_check, bool w_turn, int en_passant) {
     bool disable_castle[4] = {false};
+    //cannot disable en_passant as it can be the only move left
     //dont need to know if can castle since if can castle then game_over can't be true (space to move and not in checks)
-    std::vector<int> all_legal_moves = get_all_legal_moves(board, disable_castle, disable_castle, w_turn);
+    std::vector<int> all_legal_moves = get_all_legal_moves(board, disable_castle, disable_castle, w_turn, en_passant);
     if ((w_turn && ((int)all_legal_moves.size() == 0 && w_check)) || (!w_turn && ((int)all_legal_moves.size() == 0 && b_check))) {
         game_over = 1; //checkmate
     } else if ((int)all_legal_moves.size() == 0) {
         game_over = 2; //stalemate
     }
+}
+
+int check_en_passant(int board[8][8], int start_pos, int end_pos) {
+    //return -1 if no en passant, if there is this function returns the position of square enemy pawn can take
+    //of form i*10 + j
+
+    //check if start is a pawn, then check if it is moving two sqaures. if so then return the first one in its direction
+    int diff;
+    if (board[end_pos/10][end_pos%10] == 1) {
+        //white pawn
+        diff = end_pos - start_pos;
+        if (diff == -20) {
+            return start_pos - 10;
+        }
+    } else if (board[end_pos/10][end_pos%10] == -1) {
+        diff = end_pos - start_pos;
+        if (diff == 20) {
+            return start_pos + 10;
+        }
+    } else {
+        return -1;
+    }
+    return -1;
 }
