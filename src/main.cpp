@@ -127,7 +127,7 @@ void check_for_selection(int board[8][8], bool& select, int& select_coord, std::
         //below code runs if there is a move to select
         select = true;
         select_coord = pos;
-        moves = get_trajectory(board, select_coord, w_castle, b_castle); //gets possible moves
+        moves = get_legal_moves(board, select_coord, w_castle, b_castle, w_turn); //gets possible moves
     } else {
         select = false;
     }
@@ -151,7 +151,7 @@ int main() {
         {4, 3, 2, 5, 6, 2, 3, 4},
     };
 
-    int game_over = 0; //0 for none, 1 for white winning, 2 for black winning, 3 for stalemate
+    int game_over = 0; //0 for none, 1 for checkmate, 2 for stalemate
     bool w_turn = true;
     bool w_castle[4] = {false, true, false, true}; //[right temp, right perm, left temp, left perm]
     bool b_castle[4] = {false, true, false, true};
@@ -160,9 +160,6 @@ int main() {
     bool w_check = false;
     bool b_check = false;
     std::vector<int> moves;
-
-    /*std::vector<std::vector<int>> all_moves;
-    std::vector<std::vector<int>> all_legal_moves;*/
     
     std::unordered_map<int, Texture2D> skins = get_skins(); //skin textures maps num to Texture2D
     std::unordered_map<int, std::tuple<int, int>> coord = get_coord(); //mapping of indices to x-y coord
@@ -202,12 +199,12 @@ int main() {
         }
 
         //checking for game over and displaying end game status
-        if (game_over == 1 || game_over == 2) {
+        if (game_over == 1) {
             int text_width = MeasureText("CHECKMATE", FONT_SIZE);
             int x = (SCREEN_WIDTH - text_width) / 2;
             int y = (SCREEN_HEIGHT - FONT_SIZE) / 2;
             DrawText("CHECKMATE", x, y, FONT_SIZE, RED);
-        } else if (game_over == 3) {
+        } else if (game_over == 2) {
             int text_width = MeasureText("STALEMATE", FONT_SIZE);
             int x = (SCREEN_WIDTH - text_width) / 2;
             int y = (SCREEN_HEIGHT - FONT_SIZE) / 2;
@@ -240,69 +237,16 @@ int main() {
                     } else {
 
                             //code to run after breaking out of loop (moving piece)
+                            std::vector<int> king_coord = get_king_coord(board); //make this take in turn and only get coord of that color
+                            w_king_pos = king_coord[0];
+                            b_king_pos = king_coord[1];
 
-
-
-                            /*
-                            //first recalculate king pos
-                            std::vector<int> king_positions = get_king_coord(board);
-                            w_king_pos = king_positions[0];
-                            b_king_pos = king_positions[1];
-
-                            all_moves = get_all_moves(board, false, castling);
-
-                            //check all moves and see if kings in check, disgregarding first index signifying piece pos
-                            w_check = false;
-                            b_check = false;
-                            for (int i=0; i < (int)all_moves.size(); i++) {
-                                for (int j=1; j < (int)all_moves[i].size(); j++) {
-                                    if (all_moves[i][j] == w_king_pos) {
-                                        w_check = true;
-                                    } else if (all_moves[i][j] == b_king_pos) {
-                                        b_check = true;
-                                    }
-                                }
-                            }
-
-                            //get all legal moves, if none then either draw or checkmate.
-                            //checkmate if in check, draw if not in check
-                            all_legal_moves = get_all_moves(board, true, castling);
-                            if (w_turn) {
-                                int white_available_moves = 0;
-                                for (int i=0; i < (int)all_legal_moves.size(); i++) {
-                                    int temp_pos = all_legal_moves[i][0];
-                                    if (board[temp_pos/10][temp_pos%10] > 0) { //is white
-                                        for (int j=1; j < (int)all_legal_moves[i].size(); j++) {
-                                            white_available_moves += 1;
-                                        }
-                                    }
-                                }
-                                if (white_available_moves == 0 && w_check) { //checked and no moves so lost
-                                    game_over = 2;
-                                } else if (white_available_moves == 0) { //no moves but not in check so draw
-                                    game_over = 3;
-                                }
-                            } else { //blacks turn
-                                int black_available_moves = 0;
-                                for (int i=0; i < (int)all_legal_moves.size(); i++) {
-                                    int temp_pos = all_legal_moves[i][0];
-                                    if (board[temp_pos/10][temp_pos%10] < 0) { //is black
-                                        for (int j=1; j < (int)all_legal_moves[i].size(); j++) {
-                                            black_available_moves += 1;
-                                        }
-                                    }
-                                }
-                                if (black_available_moves == 0 && b_check) {
-                                    game_over = 1;
-                                } else if (black_available_moves == 0) {
-                                    game_over = 3;
-                                }
-                            }
-
-                            //check castling conditions below
-                            if (castling[1] || castling[3] || castling[5] || castling[7]) { //if all perms false no point
-                                check_castle_conditions(board, castling, all_moves);
-                            }*/
+                            //true to check white and false for black
+                            w_check = in_check(board, true);
+                            b_check = in_check(board, false);
+                            check_castle_conditions(board, w_castle, true);
+                            check_castle_conditions(board, b_castle, false);
+                            check_game_state(board, game_over, w_check, b_check, w_turn);
 
                     }
                 } else { //get pos of selection if piece
