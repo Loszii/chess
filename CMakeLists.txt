@@ -24,15 +24,17 @@ FetchContent_MakeAvailable(googletest)
 FetchContent_MakeAvailable(raylib)
 
 set(SOURCES 
-    src/main.cpp
+    src/helper.cpp
     src/movement.cpp)
 
 set(HEADERS
+    include/helper.h
     include/movement.h)
 
-#for raylib
+#for main chess
 add_executable(
   chess
+  src/main.cpp
   ${SOURCES}
   ${HEADERS}
 )
@@ -42,15 +44,21 @@ target_link_libraries(
   raylib
 )
 
+#for testing
 enable_testing()
 
 add_executable(
   testing
-  tests/test.cpp
+  tests/helper_test.cpp
+  tests/movement_test.cpp
+  ${SOURCES}
+  ${HEADERS}
 )
+target_include_directories(testing PRIVATE include)
 target_link_libraries(
   testing
   GTest::gtest_main
+  raylib
 )
 
 include(GoogleTest)

@@ -1,8 +1,8 @@
+#include <iostream>
 #include <unordered_map>
 #include <tuple>
 #include <vector>
 #include "movement.h"
-#include <iostream>
 
 void move_piece(int start_pos, int end_pos, int board[8][8]) {
     //given a start pos and end pos, moves piece at start to end
