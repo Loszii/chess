@@ -69,8 +69,7 @@ TEST(Helper, Selection) {
     ASSERT_FALSE(select);
 
     pos = 1; //black knight
-    correct.pop_back();
-    correct.pop_back();
+    correct.clear();
     correct.push_back(20);
     correct.push_back(22);
     check_for_selection(board, select, select_pos, moves, w_turn, pos, w_castle, b_castle, en_passant);
