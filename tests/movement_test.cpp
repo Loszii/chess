@@ -712,5 +712,161 @@ TEST(Movement, Trajectory) {
     bool b_castle[4] = {false};
     int en_passant = -1;
     std::vector<int> trajectory;
+    std::vector<int> moves;
+    bool w_turn = true;
 
+    int pos = 50;
+    trajectory =  get_trajectory(board, pos, w_castle, b_castle, en_passant);
+    get_pawn_moves(board, pos/10, pos%10, w_turn, moves, en_passant);
+    ASSERT_EQ(trajectory, moves);
+    moves.clear();
+
+    pos = 70;
+    trajectory =  get_trajectory(board, pos, w_castle, b_castle, en_passant);
+    get_rook_moves(board, pos/10, pos%10, w_turn, moves);
+    ASSERT_EQ(trajectory, moves);
+    moves.clear();
+
+    pos = 71;
+    trajectory =  get_trajectory(board, pos, w_castle, b_castle, en_passant);
+    get_knight_moves(board, pos/10, pos%10, w_turn, moves);
+    ASSERT_EQ(trajectory, moves);
+    moves.clear();
+
+    pos = 72;
+    trajectory =  get_trajectory(board, pos, w_castle, b_castle, en_passant);
+    get_bishop_moves(board, pos/10, pos%10, w_turn, moves);
+    ASSERT_EQ(trajectory, moves);
+    moves.clear();
+
+    pos = 73;
+    trajectory =  get_trajectory(board, pos, w_castle, b_castle, en_passant);
+    get_bishop_moves(board, pos/10, pos%10, w_turn, moves);
+    get_rook_moves(board, pos/10, pos%10, w_turn, moves);
+    ASSERT_EQ(trajectory, moves);
+    moves.clear();
+
+    pos = 74;
+    trajectory =  get_trajectory(board, pos, w_castle, b_castle, en_passant);
+    get_king_moves(board, pos/10, pos%10, w_turn, moves, w_castle);
+    ASSERT_EQ(trajectory, moves);
+    moves.clear();
+
+    w_turn = false;
+    pos = 20;
+    trajectory =  get_trajectory(board, pos, w_castle, b_castle, en_passant);
+    get_pawn_moves(board, pos/10, pos%10, w_turn, moves, en_passant);
+    ASSERT_EQ(trajectory, moves);
+    moves.clear();
+
+    pos = 0;
+    trajectory =  get_trajectory(board, pos, w_castle, b_castle, en_passant);
+    get_rook_moves(board, pos/10, pos%10, w_turn, moves);
+    ASSERT_EQ(trajectory, moves);
+    moves.clear();
+
+    pos = 1;
+    trajectory =  get_trajectory(board, pos, w_castle, b_castle, en_passant);
+    get_knight_moves(board, pos/10, pos%10, w_turn, moves);
+    ASSERT_EQ(trajectory, moves);
+    moves.clear();
+
+    pos = 2;
+    trajectory =  get_trajectory(board, pos, w_castle, b_castle, en_passant);
+    get_bishop_moves(board, pos/10, pos%10, w_turn, moves);
+    ASSERT_EQ(trajectory, moves);
+    moves.clear();
+
+    pos = 3;
+    trajectory =  get_trajectory(board, pos, w_castle, b_castle, en_passant);
+    get_bishop_moves(board, pos/10, pos%10, w_turn, moves);
+    get_rook_moves(board, pos/10, pos%10, w_turn, moves);
+    ASSERT_EQ(trajectory, moves);
+    moves.clear();
+
+    pos = 4;
+    trajectory =  get_trajectory(board, pos, w_castle, b_castle, en_passant);
+    get_king_moves(board, pos/10, pos%10, w_turn, moves, w_castle);
+    ASSERT_EQ(trajectory, moves);
+    moves.clear();
+}
+
+TEST(Movement, AllTrajectory) {
+    int board[8][8] = {
+        {-4, -3, -2, -5, -6, -2, -3, -4},
+        {-1, -1, -1, -1, -1, -1, -1, -1},
+        {0, 0, 0, 0, 0, 0, 0, 0},
+        {0, 0, 0, 0, 0, 0, 0, 0},
+        {0, 0, 0, 0, 0, 0, 0, 0},
+        {0, 0, 0, 0, 0, 0, 0, 0},
+        {1, 1, 1, 1, 1, 1, 1, 1},
+        {4, 3, 2, 5, 6, 2, 3, 4},
+    };
+    bool w_turn = true;
+    bool castle[4] = {false};
+    int en_passant = -1;
+    std::vector<int> all_trajectories;
+    all_trajectories = get_all_trajectories(board, castle, castle, w_turn, en_passant);
+    std::vector<int> correct;
+    correct.push_back(20);
+    correct.push_back(22);
+    correct.push_back(25);
+    correct.push_back(27);
+    correct.push_back(20);
+    correct.push_back(30);
+    correct.push_back(21);
+    correct.push_back(31);
+    correct.push_back(22);
+    correct.push_back(32);
+    correct.push_back(23);
+    correct.push_back(33);
+    correct.push_back(24);
+    correct.push_back(34);
+    correct.push_back(25);
+    correct.push_back(35);
+    correct.push_back(26);
+    correct.push_back(36);
+    correct.push_back(27);
+    correct.push_back(37);
+    ASSERT_EQ(all_trajectories, correct);
+    correct.clear();
+
+    w_turn = false;
+    all_trajectories = get_all_trajectories(board, castle, castle, w_turn, en_passant);
+    correct.push_back(50);
+    correct.push_back(40);
+    correct.push_back(51);
+    correct.push_back(41);
+    correct.push_back(52);
+    correct.push_back(42);
+    correct.push_back(53);
+    correct.push_back(43);
+    correct.push_back(54);
+    correct.push_back(44);
+    correct.push_back(55);
+    correct.push_back(45);
+    correct.push_back(56);
+    correct.push_back(46);
+    correct.push_back(57);
+    correct.push_back(47);
+    correct.push_back(50);
+    correct.push_back(52);
+    correct.push_back(55);
+    correct.push_back(57);
+    ASSERT_EQ(all_trajectories, correct);
+}
+
+TEST(Movement, Legal) {
+    //needs to be most extensive test
+    //some cases to consider:
+    /*
+    1. pieces pinned to king
+    2. king moving into check
+    3. moving pieces while in check that do not block
+    4. moving pieces while in check that do block
+    5. en passant to reveal king by eating pawn blocking check via enemy piece
+    6. make sure it doesnt stop any moves that are actually legal (taking piece to block check) (or just moving normally)
+    */
+
+    //get_legal_moves(int board[8][8], int pos, bool w_castle[4], bool b_castle[4], bool w_turn, int en_passant)
 }

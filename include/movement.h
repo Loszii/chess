@@ -22,7 +22,7 @@ std::vector<int> get_all_trajectories(int board[8][8], bool w_castle[4], bool b_
 
 std::vector<int> get_legal_moves(int board[8][8], int pos, bool w_castle[4], bool b_castle[4], bool w_turn, int en_passant);
 
-std::vector<int> get_all_legal_moves(int board[8][8], bool w_castle[4], bool b_castle[4], bool w_turn, int en_passant);
+std::vector<std::vector<int>> get_all_legal_moves(int board[8][8], bool w_castle[4], bool b_castle[4], bool w_turn, int en_passant);
 
 std::vector<int> get_king_coord(int board[8][8]);
 

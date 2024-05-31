@@ -381,16 +381,21 @@ std::vector<int> get_legal_moves(int board[8][8], int pos, bool w_castle[4], boo
     return legal_moves;
 }
 
-std::vector<int> get_all_legal_moves(int board[8][8], bool w_castle[4], bool b_castle[4], bool w_turn, int en_passant) {
+std::vector<std::vector<int>> get_all_legal_moves(int board[8][8], bool w_castle[4], bool b_castle[4], bool w_turn, int en_passant) {
     //returns all possible legal moves of white or black, if w_turn is true then returns all of whites legal moves
-    //the return is an array of all possible moves
-    std::vector<int> all_legal_moves;
+    //the return is a 2d vector of all possible moves with the first element in each array being positiong of original piece
+    std::vector<std::vector<int>> all_legal_moves;
     for (int i=0; i < 80; i+=10) { //iterate over entire board
         for (int j=0; j < 8; j++) {
             if ((w_turn && board[i/10][j] > 0) || (!w_turn && board[i/10][j] < 0)) { //determines black or white side
                 std::vector<int> legal_moves = get_legal_moves(board, i+j, w_castle, b_castle, w_turn, en_passant); //get all piece
-                for (int k=0; k < (int)legal_moves.size(); k++) {
-                    all_legal_moves.push_back(legal_moves[k]); //add to final array
+                std::vector<int> temp; //temp to prepend position to
+                if (!legal_moves.empty()) {
+                    temp.push_back(i+j);
+                    for (int k=0; k < (int)legal_moves.size(); k++) {
+                        temp.push_back(legal_moves[k]); //add to final array
+                    }
+                    all_legal_moves.push_back(temp);
                 }
             }
         }
@@ -497,7 +502,7 @@ void check_game_state(int board[8][8], int& game_over, bool w_check, bool b_chec
     bool disable_castle[4] = {false};
     //cannot disable en_passant as it can be the only move left
     //dont need to know if can castle since if can castle then game_over can't be true (space to move and not in checks)
-    std::vector<int> all_legal_moves = get_all_legal_moves(board, disable_castle, disable_castle, w_turn, en_passant);
+    std::vector<std::vector<int>> all_legal_moves = get_all_legal_moves(board, disable_castle, disable_castle, w_turn, en_passant);
     if ((w_turn && ((int)all_legal_moves.size() == 0 && w_check)) || (!w_turn && ((int)all_legal_moves.size() == 0 && b_check))) {
         game_over = 1; //checkmate
     } else if ((int)all_legal_moves.size() == 0) {
