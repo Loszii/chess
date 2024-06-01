@@ -139,16 +139,30 @@ void get_pawn_moves(int board[8][8], int i, int j, bool w_turn, std::vector<int>
     }
     if (i != u_bound) { //diags
         if (j > 0) {
-            if (w_turn && (board[i+dir][j-1] < 0 || ((i+dir)*10) + (j-1) == en_passant)) {
+            if (w_turn && board[i+dir][j-1] < 0) {
                 moves.push_back((i+dir)*10 + (j-1));
-            } else if (!w_turn && (board[i+dir][j-1] > 0 || ((i+dir)*10) + (j-1) == en_passant)) {
+            } else if (!w_turn && board[i+dir][j-1] > 0) {
+                moves.push_back((i+dir)*10 + (j-1));
+            }
+
+            //en passant
+            if (w_turn && ((i+dir)*10 + (j-1) == en_passant) && en_passant/10 == 2) {
+                moves.push_back((i+dir)*10 + (j-1));
+            } else if (!w_turn && ((i+dir)*10 + (j-1) == en_passant) && en_passant/10 == 5) {
                 moves.push_back((i+dir)*10 + (j-1));
             }
         }
         if (j < 7) {
-            if (w_turn && (board[i+dir][j+1] < 0 || ((i+dir)*10) + (j+1) == en_passant)) {
+            if (w_turn && board[i+dir][j+1] < 0) {
                 moves.push_back((i+dir)*10 + (j+1));
-            } else if (!w_turn && (board[i+dir][j+1] > 0 || ((i+dir)*10) + (j+1) == en_passant)) {
+            } else if (!w_turn && board[i+dir][j+1] > 0) {
+                moves.push_back((i+dir)*10 + (j+1));
+            }
+
+            //en passant
+            if (w_turn && ((i+dir)*10 + (j+1) == en_passant) && en_passant/10 == 2) {
+                moves.push_back((i+dir)*10 + (j+1));
+            } else if (!w_turn && ((i+dir)*10 + (j+1) == en_passant) && en_passant/10 == 5) {
                 moves.push_back((i+dir)*10 + (j+1));
             }
         }
@@ -415,19 +429,14 @@ std::vector<int> get_legal_moves(int board[8][8], int pos, bool w_castle[4], boo
     //player in check, if so it removes it, if w_turn is true then the piece at pos must be white
     std::vector<int> legal_moves;
     std::vector<int> current_moves = get_trajectory(board, pos, w_castle, b_castle, en_passant);
+    int captured_pos;
     for (int i=0; i < (int)current_moves.size(); i++) {
-        int board_copy[8][8];
-        //copy the board
-        for (int j=0; j < 8; j++) {
-            for (int k=0; k < 8; k++) {
-                board_copy[j][k] = board[j][k];
-            }
-        }
         //make move then check if enemy has vision of king, only concerned with static board
-        move_piece(pos, current_moves[i], board_copy);
-        if (!in_check(board_copy, w_turn)) {
+        captured_pos = move_piece(pos, current_moves[i], board);
+        if (!in_check(board, w_turn)) {
             legal_moves.push_back(current_moves[i]);
         }
+        undo_move(pos, current_moves[i], board, captured_pos, -1); //promotion doesnt matter when considering piece displacement
     }
     return legal_moves;
 }

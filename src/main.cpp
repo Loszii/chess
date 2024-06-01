@@ -19,8 +19,6 @@ General rule is no pawns on the board and both sides of either of the following 
 /*in this program positions on the board are represented by i*10 + j for simplicity and stored as an integer
 this means accessing a position is [pos/10][pos%10] and saving a pos is i*10 + j*/
 
-//TO DO: implement undo-move and use it anywhere instead of copying board to fasten program
-
 void updater(int board[8][8], bool w_turn, int& w_king_pos, int& b_king_pos, bool& w_check, bool& b_check, int past_moves[2], bool w_castle[4], bool b_castle[4], int& game_over, int& en_passant, int& promotion_pos) {
     //code to run after moving piece
     //check for pawn promotion before below since can affect check/castle
@@ -162,6 +160,7 @@ int main() {
                 past_moves[0] = result[0];
                 past_moves[1] = result[1];
                 move_piece(result[0], result[1], board);
+
                 updater(board, w_turn, w_king_pos, b_king_pos, w_check, b_check, past_moves, w_castle, b_castle, game_over, en_passant, promotion_pos);
                 if (w_turn) {
                     w_turn = false;

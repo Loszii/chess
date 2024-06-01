@@ -236,8 +236,12 @@ TEST(Movement, UndoMove) {
         {1, 1, 1, 1, 1, 1, 1, 1},
         {4, 3, 2, 5, 6, 2, 3, 4},
     };
-    cap_piece = move_piece(60, 50, board);
-    undo_move(60, 50, board, cap_piece, promotion_pos);
+    cap_piece = move_piece(60, 40, board);
+    promotion_pos = check_pawn_promotion(board);
+    undo_move(60, 40, board, cap_piece, promotion_pos);
+    cap_piece = move_piece(10, 30, board);
+    promotion_pos = check_pawn_promotion(board);
+    undo_move(10, 30, board, cap_piece, promotion_pos);
     SAME_BOARD(board, result);
 
     //en passant
@@ -594,6 +598,49 @@ TEST(Movement, Pawn) {
     get_pawn_moves(board4, i, j, w_turn, moves, en_passant);
     correct.push_back(51);
     correct.push_back(52);
+    ASSERT_EQ(moves, correct);
+    correct.clear();
+    moves.clear();
+
+    //en passant wrong side
+    int board5[8][8] = {
+        {-4, -3, -2, -5, -6, -2, -3, -4},
+        {-1, -1, -1, -1, -1, -1, -1, -1},
+        {0, 0, 0, 0, 0, 0, 0, 0},
+        {0, 0, 0, 0, 0, 0, 0, 0},
+        {0, 0, 0, 1, 0, 0, 0, 0},
+        {0, 0, 0, 0, 0, 0, 0, 0},
+        {1, 1, 1, 0, 1, 1, 1, 1},
+        {4, 3, 2, 5, 6, 2, 3, 4},
+    };
+    w_turn = true;
+    en_passant = 53;
+    i = 6;
+    j = 2;
+    get_pawn_moves(board5, i, j, w_turn, moves, en_passant);
+    correct.push_back(52);
+    correct.push_back(42);
+    ASSERT_EQ(moves, correct);
+    moves.clear();
+    correct.clear();
+
+    int board6[8][8] = {
+        {-4, -3, -2, -5, -6, -2, -3, -4},
+        {-1, 0, -1, -1, -1, -1, -1, -1},
+        {0, 0, 0, 0, 0, 0, 0, 0},
+        {0, -1, 0, 0, 0, 0, 0, 0},
+        {0, 0, 0, 0, 0, 0, 0, 0},
+        {0, 0, 0, 0, 0, 0, 0, 0},
+        {1, 1, 1, 1, 1, 1, 1, 1},
+        {4, 3, 2, 5, 6, 2, 3, 4},
+    };
+    w_turn = false;
+    en_passant = 21;
+    i = 1;
+    j = 0;
+    get_pawn_moves(board6, i, j, w_turn, moves, en_passant);
+    correct.push_back(20);
+    correct.push_back(30);
     ASSERT_EQ(moves, correct);
 }
 
