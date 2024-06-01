@@ -20,8 +20,8 @@ int eval_board(int board[8][8]) {
     return 0;
 }
 
-void make_best_move(int board[8][8], bool w_castle[4], bool b_castle[4], bool w_turn, int en_passant) {
-    //makes the best move for enginge on the board, for now w_turn is always false since engine is always black
+std::vector<int> make_best_move(int board[8][8], bool w_castle[4], bool b_castle[4], bool w_turn, int en_passant) {
+    //returns an array of the start pos / end pos of best move, for now w_turn is always false since engine is always black
 
     //for now lets implement random moves
     std::vector<std::vector<int>> all_moves = get_all_legal_moves(board, w_castle, b_castle, w_turn, en_passant);
@@ -33,5 +33,10 @@ void make_best_move(int board[8][8], bool w_castle[4], bool b_castle[4], bool w_
     int index2 = distr2(gen);
     int start_pos = all_moves[index1][0];
     int end_pos = all_moves[index1][index2];
-    move_piece(start_pos, end_pos, board);
+    
+    std::vector<int> result;
+    result.push_back(start_pos);
+    result.push_back(end_pos);
+
+    return result;
 }

@@ -154,9 +154,17 @@ int main() {
                 }
             } else {
                 //engine code
-                make_best_move(board, w_castle, b_castle, w_turn, en_passant);
+                std::vector<int> result = make_best_move(board, w_castle, b_castle, w_turn, en_passant);
+                //need to update past moves
+                past_moves[0] = result[0];
+                past_moves[1] = result[1];
+                move_piece(result[0], result[1], board);
                 updater(board, w_turn, w_king_pos, b_king_pos, w_check, b_check, past_moves, w_castle, b_castle, game_over, en_passant);
-                w_turn = true; //back to player turn
+                if (w_turn) {
+                    w_turn = false;
+                } else { //for now this will only run since engine always black
+                    w_turn = true;
+                }
             }
         }
     }
