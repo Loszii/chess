@@ -4,12 +4,39 @@
 #include <vector>
 #include "helper.h"
 #include "movement.h"
+#include "engine.h"
 #include "raylib.h"
 
 //to do: draw if no material in future allow promotion to be a selection, then create a engine to play against
 
+/*
+General rule is no pawns on the board and both sides of either of the following for insufficcient material:
+1.a lone king
+2.a king and bishop
+3.a king and knight
+*/
+
 /*in this program positions on the board are represented by i*10 + j for simplicity and stored as an integer
 this means accessing a position is [pos/10][pos%10] and saving a pos is i*10 + j*/
+
+void updater(int board[8][8], bool w_turn, int& w_king_pos, int& b_king_pos, bool& w_check, bool& b_check, int past_moves[2], bool w_castle[4], bool b_castle[4], int& game_over, int& en_passant) {
+    //code to run after moving piece
+    //check for pawn promotion before below since can affect check/castle
+    check_pawn_promotion(board);
+    //checks
+    std::vector<int> king_coord = get_king_coord(board);
+    w_king_pos = king_coord[0];
+    b_king_pos = king_coord[1];
+    w_check = in_check(board, true);
+    b_check = in_check(board, false);
+    //en passant and castle
+    en_passant = check_en_passant(board, past_moves[0], past_moves[1]);
+    check_castle_conditions(board, w_castle, true);
+    check_castle_conditions(board, b_castle, false);
+    //checkmate or stalemate
+    check_game_state(board, game_over, w_check, b_check, w_turn, en_passant);
+}
+
 
 int main() {
     //main game loop
@@ -29,7 +56,7 @@ int main() {
         {4, 3, 2, 5, 6, 2, 3, 4},
     };
 
-    int game_over = 0; //0 for none, 1 for checkmate, 2 for stalemate
+    int game_over = 0; //0 for none, 1 for stalemate, 2 for checkmate, -1 / -2 for black winning or stale
     bool w_turn = true;
     bool w_castle[4] = {false, true, false, true}; //[right temp, right perm, left temp, left perm]
     bool b_castle[4] = {false, true, false, true};
@@ -79,12 +106,12 @@ int main() {
         }
 
         //checking for game over and displaying end game status
-        if (game_over == 1) {
+        if (game_over == 2 || game_over == -2) {
             int text_width = MeasureText("CHECKMATE", FONT_SIZE);
             int x = (SCREEN_WIDTH - text_width) / 2;
             int y = (SCREEN_HEIGHT - FONT_SIZE) / 2;
             DrawText("CHECKMATE", x, y, FONT_SIZE, RED);
-        } else if (game_over == 2) {
+        } else if (game_over == 1 || game_over == -1) {
             int text_width = MeasureText("STALEMATE", FONT_SIZE);
             int x = (SCREEN_WIDTH - text_width) / 2;
             int y = (SCREEN_HEIGHT - FONT_SIZE) / 2;
@@ -94,54 +121,45 @@ int main() {
         EndDrawing();
 
         //game functionality 
-        if (game_over == 0 && IsMouseButtonPressed(0)) {
-            int pos = get_index(GetMouseX(), GetMouseY(), coord);
-            if (pos != -1) { //-1 means not a square
-                if (select) {
-                    //check if mouse was clicked on a available move
-                    for (int i=0; i < (int)moves.size(); i++) {
-                        if (pos == moves[i]) {
-                            past_moves[0] = select_pos;
-                            past_moves[1] = pos;
-                            move_piece(select_pos, pos, board);
-                            if (w_turn) {
-                                w_turn = false;
-                            } else {
-                                w_turn = true;
+        if (game_over == 0) {
+            if (w_turn) {
+                if (IsMouseButtonPressed(0)) {
+                    int pos = get_index(GetMouseX(), GetMouseY(), coord);
+                    if (pos != -1) { //-1 means not a square
+                        if (select) {
+                            //check if mouse was clicked on a available move
+                            for (int i=0; i < (int)moves.size(); i++) {
+                                if (pos == moves[i]) {
+                                    past_moves[0] = select_pos;
+                                    past_moves[1] = pos;
+                                    move_piece(select_pos, pos, board);
+                                    if (w_turn) {
+                                        w_turn = false;
+                                    } else {
+                                        w_turn = true;
+                                    }
+                                    select = false;
+                                    break;
+                                }
                             }
-                            select = false;
-                            break;
+                            if (select) { //if still selecting and didnt make viable move
+                                check_for_selection(board, select, select_pos, moves, w_turn, pos, w_castle, b_castle, en_passant); //checks to find selection and sets moves to all moves
+                            } else { //no longer selecting so we moved a piece
+                                updater(board, w_turn, w_king_pos, b_king_pos, w_check, b_check, past_moves, w_castle, b_castle, game_over, en_passant);
+                            }
+                        } else { //get pos of selection if piece
+                            check_for_selection(board, select, select_pos, moves, w_turn, pos, w_castle, b_castle, en_passant);
                         }
                     }
-                    if (select) { //if still selecting and didnt make viable move
-                        check_for_selection(board, select, select_pos, moves, w_turn, pos, w_castle, b_castle, en_passant); //checks to find selection and sets moves to all moves
-                    } else {
-
-                            //code to run after breaking out of loop (moving piece)
-
-                            //check for pawn promotion before below since can affect check/castle
-                            check_pawn_promotion(board);
-                            //checks
-                            std::vector<int> king_coord = get_king_coord(board);
-                            w_king_pos = king_coord[0];
-                            b_king_pos = king_coord[1];
-                            w_check = in_check(board, true);
-                            b_check = in_check(board, false);
-                            //en passant and castle
-                            en_passant = check_en_passant(board, past_moves[0], past_moves[1]);
-                            check_castle_conditions(board, w_castle, true);
-                            check_castle_conditions(board, b_castle, false);
-                            //checkmate or stalemate
-                            check_game_state(board, game_over, w_check, b_check, w_turn, en_passant);
-
-                    }
-                } else { //get pos of selection if piece
-                    check_for_selection(board, select, select_pos, moves, w_turn, pos, w_castle, b_castle, en_passant);
                 }
+            } else {
+                //engine code
+                make_best_move(board, w_castle, b_castle, w_turn, en_passant);
+                updater(board, w_turn, w_king_pos, b_king_pos, w_check, b_check, past_moves, w_castle, b_castle, game_over, en_passant);
+                w_turn = true; //back to player turn
             }
         }
     }
-
     //unloading textures
     UnloadTexture(board_texture);
     UnloadTexture(select_texture);

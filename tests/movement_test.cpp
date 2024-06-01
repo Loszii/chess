@@ -1,6 +1,4 @@
 #include <gtest/gtest.h>
-#include <unordered_map>
-#include <tuple>
 #include <vector>
 #include "movement.h"
 
@@ -1252,7 +1250,7 @@ TEST(Movement, CastleConditions) {
 TEST(Movement, GameState) {
     //check with edge cases like en passant last move to prevent state mate after pawn checks
     //check regular checkmate and stalemate of both sides
-    //0 = regular , 1 = checkmate, 2 = stalemate
+    //0 = regular , 2 = checkmate, 1 = stalemate (negative when black wins)
 
     //regular board
     int board[8][8] = {
@@ -1290,7 +1288,7 @@ TEST(Movement, GameState) {
     b_check = true;
 
     check_game_state(board2, game_over, w_check, b_check, w_turn, en_passant); 
-    ASSERT_EQ(game_over, 1);
+    ASSERT_EQ(game_over, 2);
     game_over = 0;
     b_check = false;
 
@@ -1308,7 +1306,7 @@ TEST(Movement, GameState) {
     w_check = true;
 
     check_game_state(board3, game_over, w_check, b_check, w_turn, en_passant); 
-    ASSERT_EQ(game_over, 1);
+    ASSERT_EQ(game_over, -2);
     game_over = 0;
     w_check = false;
 
@@ -1325,7 +1323,7 @@ TEST(Movement, GameState) {
     w_turn = false;
 
     check_game_state(board4, game_over, w_check, b_check, w_turn, en_passant); 
-    ASSERT_EQ(game_over, 2);
+    ASSERT_EQ(game_over, 1);
     game_over = 0;
 
     int board5[8][8] = { //white gets stalemate
@@ -1341,7 +1339,7 @@ TEST(Movement, GameState) {
     w_turn = true;
 
     check_game_state(board5, game_over, w_check, b_check, w_turn, en_passant); 
-    ASSERT_EQ(game_over, 2);
+    ASSERT_EQ(game_over, -1);
     game_over = 0;
 
     //en passant edge case:

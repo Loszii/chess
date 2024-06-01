@@ -1,6 +1,4 @@
 #include <iostream>
-#include <unordered_map>
-#include <tuple>
 #include <vector>
 #include "movement.h"
 
@@ -276,7 +274,7 @@ void get_king_moves(int board[8][8], int i, int j, bool w_turn, std::vector<int>
 }
 
 std::vector<int> get_trajectory(int board[8][8], int pos, bool w_castle[4], bool b_castle[4], int en_passant) {
-    //given a board, coord sys, and square return all possible indices to move, legal or not
+    //given a board and square return all possible indices to move, legal or not
     //pos is a index of form i*10 + j
     //indices will be returned in same form
 
@@ -499,14 +497,21 @@ void check_castle_conditions(int board[8][8], bool castle[4], bool w_turn) {
 }
 
 void check_game_state(int board[8][8], int& game_over, bool w_check, bool b_check, bool w_turn, int en_passant) {
+    //checks if there is a checkmate/stalemate for whoevers turn it is
     bool disable_castle[4] = {false};
+    int scale;
+    if (w_turn) {
+        scale = -1;
+    } else {
+        scale = 1;
+    }
     //cannot disable en_passant as it can be the only move left
     //dont need to know if can castle since if can castle then game_over can't be true (space to move and not in checks)
     std::vector<std::vector<int>> all_legal_moves = get_all_legal_moves(board, disable_castle, disable_castle, w_turn, en_passant);
     if ((w_turn && ((int)all_legal_moves.size() == 0 && w_check)) || (!w_turn && ((int)all_legal_moves.size() == 0 && b_check))) {
-        game_over = 1; //checkmate
+        game_over = scale * 2; //checkmate
     } else if ((int)all_legal_moves.size() == 0) {
-        game_over = 2; //stalemate
+        game_over = scale * 1; //stalemate
     }
 }
 
