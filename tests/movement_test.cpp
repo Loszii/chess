@@ -316,7 +316,7 @@ TEST(Movement, Pawn) {
     correct.clear();
     moves.clear();
 
-    //en passante
+    //en passant
     int board4[8][8] = {
         {-4, -3, -2, -5, -6, -2, -3, -4},
         {-1, 0, -1, 0, -1, -1, -1, -1},
@@ -1417,4 +1417,29 @@ TEST(Movement, EnPassant) {
     start_pos = 14;
     end_pos = 34;
     ASSERT_EQ(check_en_passant(board3, start_pos, end_pos), -1);
+}
+
+TEST(Movement, PawnPromotion) {
+    int board[8][8] = {
+        {1, 1, 1, 1, 1, 1, 1, 1},
+        {1, 1, 1, 1, 1, 1, 1, 1},
+        {0, 0, 0, 0, 0, 0, 0, 0},
+        {0, 0, 0, 0, 0, 0, 0, 0},
+        {0, 0, 0, 0, 0, 0, 0, 0},
+        {0, 0, 0, 0, 0, 0, 0, 0},
+        {-1, -1, -1, -1, -1, -1, -1, -1},
+        {-1, -1, -1, -1, -1, -1, -1, -1},
+    };
+    check_pawn_promotion(board);
+    int correct[8][8] = {
+        {5, 5, 5, 5, 5, 5, 5, 5}, //all pawns at last row promoted
+        {1, 1, 1, 1, 1, 1, 1, 1},
+        {0, 0, 0, 0, 0, 0, 0, 0},
+        {0, 0, 0, 0, 0, 0, 0, 0},
+        {0, 0, 0, 0, 0, 0, 0, 0},
+        {0, 0, 0, 0, 0, 0, 0, 0},
+        {-1, -1, -1, -1, -1, -1, -1, -1},
+        {-5, -5, -5, -5, -5, -5, -5, -5},
+    };
+    SAME_BOARD(board, correct);
 }

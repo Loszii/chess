@@ -532,3 +532,15 @@ int check_en_passant(int board[8][8], int start_pos, int end_pos) {
     }
     return -1;
 }
+
+void check_pawn_promotion(int board[8][8]) {
+    //given a board, promotes a pawn to a queen automatically if it make it to the end of board
+    for (int i=0; i < 8; i++) {
+        if (board[0][i] == 1) {
+            board[0][i] = 5;
+        }
+        if (board[7][i] == -1) {
+            board[7][i] = -5;
+        }
+    }
+}

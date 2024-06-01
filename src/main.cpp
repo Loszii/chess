@@ -6,11 +6,7 @@
 #include "movement.h"
 #include "raylib.h"
 
-//to do: draw if no material and pawn promotion as well
-//to do: make test cases for edge cases like pawn promotion, en passant, castling and legality of moves
-
-//for en pessant, can only be one possible square at time, so give get_moves a position integer representing a viable en pessant square,
-//for pawns check if their diagonals are this position, if so add the move to get moves and remove the pawn below (will take new piece moving code)
+//to do: draw if no material in future allow promotion to be a selection, then create a engine to play against
 
 /*in this program positions on the board are represented by i*10 + j for simplicity and stored as an integer
 this means accessing a position is [pos/10][pos%10] and saving a pos is i*10 + j*/
@@ -122,16 +118,20 @@ int main() {
                     } else {
 
                             //code to run after breaking out of loop (moving piece)
-                            std::vector<int> king_coord = get_king_coord(board); //make this take in turn and only get coord of that color
+
+                            //check for pawn promotion before below since can affect check/castle
+                            check_pawn_promotion(board);
+                            //checks
+                            std::vector<int> king_coord = get_king_coord(board);
                             w_king_pos = king_coord[0];
                             b_king_pos = king_coord[1];
-
-                            //true to check white and false for black
                             w_check = in_check(board, true);
                             b_check = in_check(board, false);
+                            //en passant and castle
                             en_passant = check_en_passant(board, past_moves[0], past_moves[1]);
                             check_castle_conditions(board, w_castle, true);
                             check_castle_conditions(board, b_castle, false);
+                            //checkmate or stalemate
                             check_game_state(board, game_over, w_check, b_check, w_turn, en_passant);
 
                     }
