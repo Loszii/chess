@@ -2,7 +2,9 @@
 
 #pragma once
 
-void move_piece(int start_pos, int end_pos, int board[8][8]);
+int move_piece(int start_pos, int end_pos, int board[8][8]);
+
+void undo_move(int start_pos, int end_pos, int board[8][8], int captured_piece, int promotion_pos);
 
 void get_pawn_moves(int board[8][8], int i, int j, bool w_turn, std::vector<int>& moves, int en_passant);
 
@@ -32,4 +34,4 @@ void check_game_state(int board[8][8], int& game_over, bool w_check, bool b_chec
 
 int check_en_passant(int board[8][8], int start_pos, int end_pos);
 
-void check_pawn_promotion(int board[8][8]);
+int check_pawn_promotion(int board[8][8]);

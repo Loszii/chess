@@ -2,8 +2,9 @@
 #include <vector>
 #include "movement.h"
 
-void move_piece(int start_pos, int end_pos, int board[8][8]) {
+int move_piece(int start_pos, int end_pos, int board[8][8]) {
     //given a start pos and end pos, moves piece at start to end
+    //returns the piece that was captured if any
     int i = start_pos/10;
     int j = start_pos%10;
     //for castling:
@@ -61,8 +62,60 @@ void move_piece(int start_pos, int end_pos, int board[8][8]) {
     }
 
     //actually move piece
+    int captured_piece = board[end_pos/10][end_pos%10];
     board[end_pos/10][end_pos%10] = board[start_pos/10][start_pos%10];
     board[start_pos/10][start_pos%10] = 0;
+    return captured_piece;
+}
+
+void undo_move(int start_pos, int end_pos, int board[8][8], int captured_piece, int promotion_pos) {
+    //if pawn moved diagonally and piece taken is 0 then we must add back a pawn
+    //if king moved two squares must un-castle
+    //if pawn promoted must de-promote 
+
+    if (promotion_pos == end_pos) {
+        if (board[end_pos/10][end_pos%10] > 0) {
+            board[start_pos/10][start_pos%10] = 1;
+            board[end_pos/10][end_pos%10] = captured_piece;
+            return;
+        } else {
+            board[start_pos/10][start_pos%10] = -1;
+            board[end_pos/10][end_pos%10] = captured_piece;
+            return;
+        }
+    }
+
+    //en passant or castle
+    if (captured_piece == 0) {
+        if (board[end_pos/10][end_pos%10] == 1) { //is pawn that moved
+            if (end_pos == start_pos - 9 || end_pos == start_pos - 11) { //diagonal
+                int pawn_pos = end_pos + 10;
+                board[pawn_pos/10][pawn_pos%10] = -1;
+            }
+        } else if (board[end_pos/10][end_pos%10] == -1) {
+            if (end_pos == start_pos + 11 || end_pos == start_pos + 9) { //diagonal
+                int pawn_pos = end_pos - 10;
+                board[pawn_pos/10][pawn_pos%10] = 1;
+            }
+        }
+        //castle
+        if (board[end_pos/10][end_pos%10] == 6 || board[end_pos/10][end_pos%10] == -6) {
+            if (end_pos - start_pos == 2) { //castled right
+                int rook_pos = end_pos - 1;
+                int rook_dest = end_pos + 1;
+                board[rook_dest/10][rook_dest%10] = board[rook_pos/10][rook_pos%10];
+                board[rook_pos/10][rook_pos%10] = 0;
+            } else if (end_pos - start_pos == -2) { //castled left
+                int rook_pos = end_pos + 1;
+                int rook_dest = end_pos - 2;
+                board[rook_dest/10][rook_dest%10] = board[rook_pos/10][rook_pos%10];
+                board[rook_pos/10][rook_pos%10] = 0;
+            }
+        }
+    }
+
+    board[start_pos/10][start_pos%10] = board[end_pos/10][end_pos%10];
+    board[end_pos/10][end_pos%10] = captured_piece;
 }
 
 void get_pawn_moves(int board[8][8], int i, int j, bool w_turn, std::vector<int>& moves, int en_passant) {
@@ -538,14 +591,18 @@ int check_en_passant(int board[8][8], int start_pos, int end_pos) {
     return -1;
 }
 
-void check_pawn_promotion(int board[8][8]) {
+int check_pawn_promotion(int board[8][8]) {
     //given a board, promotes a pawn to a queen automatically if it make it to the end of board
+    //return pos of promotion or -1 if none
     for (int i=0; i < 8; i++) {
         if (board[0][i] == 1) {
             board[0][i] = 5;
+            return i;
         }
         if (board[7][i] == -1) {
             board[7][i] = -5;
+            return 70+i;
         }
     }
+    return -1;
 }

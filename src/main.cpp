@@ -19,10 +19,12 @@ General rule is no pawns on the board and both sides of either of the following 
 /*in this program positions on the board are represented by i*10 + j for simplicity and stored as an integer
 this means accessing a position is [pos/10][pos%10] and saving a pos is i*10 + j*/
 
-void updater(int board[8][8], bool w_turn, int& w_king_pos, int& b_king_pos, bool& w_check, bool& b_check, int past_moves[2], bool w_castle[4], bool b_castle[4], int& game_over, int& en_passant) {
+//TO DO: implement undo-move and use it anywhere instead of copying board to fasten program
+
+void updater(int board[8][8], bool w_turn, int& w_king_pos, int& b_king_pos, bool& w_check, bool& b_check, int past_moves[2], bool w_castle[4], bool b_castle[4], int& game_over, int& en_passant, int& promotion_pos) {
     //code to run after moving piece
     //check for pawn promotion before below since can affect check/castle
-    check_pawn_promotion(board);
+    promotion_pos = check_pawn_promotion(board);
     //checks
     std::vector<int> king_coord = get_king_coord(board);
     w_king_pos = king_coord[0];
@@ -61,6 +63,7 @@ int main() {
     bool w_castle[4] = {false, true, false, true}; //[right temp, right perm, left temp, left perm]
     bool b_castle[4] = {false, true, false, true};
     int en_passant = -1; //-1 if no squares available, if there is then this will be the pos
+    int promotion_pos = -1; //-1 if nothing promoted, else will be square of promotion
     int w_king_pos = 74;
     int b_king_pos = 4;
     bool w_check = false;
@@ -145,7 +148,7 @@ int main() {
                             if (select) { //if still selecting and didnt make viable move
                                 check_for_selection(board, select, select_pos, moves, w_turn, pos, w_castle, b_castle, en_passant); //checks to find selection and sets moves to all moves
                             } else { //no longer selecting so we moved a piece
-                                updater(board, w_turn, w_king_pos, b_king_pos, w_check, b_check, past_moves, w_castle, b_castle, game_over, en_passant);
+                                updater(board, w_turn, w_king_pos, b_king_pos, w_check, b_check, past_moves, w_castle, b_castle, game_over, en_passant, promotion_pos);
                             }
                         } else { //get pos of selection if piece
                             check_for_selection(board, select, select_pos, moves, w_turn, pos, w_castle, b_castle, en_passant);
@@ -159,7 +162,7 @@ int main() {
                 past_moves[0] = result[0];
                 past_moves[1] = result[1];
                 move_piece(result[0], result[1], board);
-                updater(board, w_turn, w_king_pos, b_king_pos, w_check, b_check, past_moves, w_castle, b_castle, game_over, en_passant);
+                updater(board, w_turn, w_king_pos, b_king_pos, w_check, b_check, past_moves, w_castle, b_castle, game_over, en_passant, promotion_pos);
                 if (w_turn) {
                     w_turn = false;
                 } else { //for now this will only run since engine always black

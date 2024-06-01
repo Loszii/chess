@@ -39,8 +39,11 @@ TEST(Movement, MovePiece) {
         {0, 1, 1, 1, 1, 1, 1, 1},
         {4, 3, 2, 5, 6, 2, 3, 4},
     };
-    move_piece(60, 40, board); //moving single piece
+    int cap_piece;
+    cap_piece = move_piece(60, 40, board); //moving single piece
     SAME_BOARD(board, result1);
+    ASSERT_EQ(cap_piece, 0);
+
     //castling
     int board2[8][8] = {
         {-4, 0, 0, 0, -6, -2, -3, -4},
@@ -52,7 +55,7 @@ TEST(Movement, MovePiece) {
         {1, 1, 1, 1, 1, 1, 1, 1},
         {4, 3, 2, 5, 6, 0, 0, 4},
     };
-    move_piece(4, 2, board2); //black left castle
+    cap_piece = move_piece(4, 2, board2); //black left castle
     int result4[8][8] = {
         {0, 0, -6, -4, 0, -2, -3, -4},
         {-1, -1, -1, -1, -1, -1, -1, -1},
@@ -64,7 +67,8 @@ TEST(Movement, MovePiece) {
         {4, 3, 2, 5, 6, 0, 0, 4},
     };
     SAME_BOARD(board2, result4);
-    move_piece(74, 76, board2); //white right castle
+    ASSERT_EQ(cap_piece, 0);
+    cap_piece = move_piece(74, 76, board2); //white right castle
     int result5[8][8] = {
         {0, 0, -6, -4, 0, -2, -3, -4},
         {-1, -1, -1, -1, -1, -1, -1, -1},
@@ -76,6 +80,7 @@ TEST(Movement, MovePiece) {
         {4, 3, 2, 5, 0, 4, 6, 0},
     };
     SAME_BOARD(board2, result5);
+    ASSERT_EQ(cap_piece, 0);
     int board10[8][8] = {
         {-4, 0, 0, 0, -6, 0, 0, -4},
         {-1, -1, -1, -1, -1, -1, -1, -1},
@@ -86,7 +91,7 @@ TEST(Movement, MovePiece) {
         {1, 1, 1, 1, 1, 1, 1, 1},
         {4, 0, 0, 0, 6, 0, 0, 4},
     };
-    move_piece(4, 6, board10); //black  right castle
+    cap_piece =  move_piece(4, 6, board10); //black  right castle
     int result10[8][8] = {
         {-4, 0, 0, 0, 0, -4, -6, 0},
         {-1, -1, -1, -1, -1, -1, -1, -1},
@@ -98,7 +103,8 @@ TEST(Movement, MovePiece) {
         {4, 0, 0, 0, 6, 0, 0, 4},
     };
     SAME_BOARD(board10, result10);
-    move_piece(74, 72, board10); //white left castle
+    ASSERT_EQ(cap_piece, 0);
+    cap_piece = move_piece(74, 72, board10); //white left castle
     int result11[8][8] = {
         {-4, 0, 0, 0, 0, -4, -6, 0},
         {-1, -1, -1, -1, -1, -1, -1, -1},
@@ -110,6 +116,7 @@ TEST(Movement, MovePiece) {
         {0, 0, 6, 4, 0, 0, 0, 4},
     };
     SAME_BOARD(board10, result11);
+    ASSERT_EQ(cap_piece, 0);
     //en passant
     int board3[8][8] = {
         {-4, -3, -2, -5, -6, -2, -3, -4},
@@ -121,7 +128,7 @@ TEST(Movement, MovePiece) {
         {1, 1, 1, 0, 1, 1, 1, 1},
         {4, 3, 2, 5, 6, 2, 3, 4},
     };
-    move_piece(33, 24, board3);
+    cap_piece = move_piece(33, 24, board3);
     int result6[8][8] = {
         {-4, -3, -2, -5, -6, -2, -3, -4},
         {-1, -1, -1, 0, -1, -1, -1, -1},
@@ -133,6 +140,7 @@ TEST(Movement, MovePiece) {
         {4, 3, 2, 5, 6, 2, 3, 4},
     };
     SAME_BOARD(board3, result6);
+    ASSERT_EQ(cap_piece, 0);
     int board4[8][8] = {
         {-4, 0, -2, -5, -6, -2, -3, -4},
         {-1, -1, -1, 0, -1, -1, -1, -1},
@@ -143,7 +151,7 @@ TEST(Movement, MovePiece) {
         {1, 1, 1, 0, 1, 1, 1, 1},
         {4, 3, 2, 5, 6, 2, 3, 4},
     };
-    move_piece(33, 24, board4);
+    cap_piece = move_piece(33, 24, board4);
     int result7[8][8] = {
         {-4, 0, -2, -5, -6, -2, -3, -4},
         {-1, -1, -1, 0, -1, -1, -1, -1},
@@ -155,6 +163,7 @@ TEST(Movement, MovePiece) {
         {4, 3, 2, 5, 6, 2, 3, 4},
     };
     SAME_BOARD(board4, result7);
+    ASSERT_EQ(cap_piece, -1);
     //en passant black
     int board20[8][8] = {
         {-4, -3, -2, -5, -6, -2, -3, -4},
@@ -166,7 +175,7 @@ TEST(Movement, MovePiece) {
         {1, 1, 1, 0, 1, 1, 1, 1},
         {4, 3, 2, 5, 6, 2, 3, 4},
     };
-    move_piece(44, 53, board20);
+    cap_piece = move_piece(44, 53, board20);
     int result20[8][8] = {
         {-4, -3, -2, -5, -6, -2, -3, -4},
         {-1, -1, -1, 0, -1, -1, -1, -1},
@@ -178,6 +187,7 @@ TEST(Movement, MovePiece) {
         {4, 3, 2, 5, 6, 2, 3, 4},
     };
     SAME_BOARD(board20, result20);
+    ASSERT_EQ(cap_piece, 0);
     int board21[8][8] = {
         {-4, -3, -2, -5, -6, -2, -3, -4},
         {-1, -1, -1, 0, -1, -1, -1, -1},
@@ -188,7 +198,7 @@ TEST(Movement, MovePiece) {
         {1, 1, 1, 0, 1, 1, 1, 1},
         {4, 3, 0, 5, 6, 2, 3, 4},
     };
-    move_piece(44, 53, board21);
+    cap_piece = move_piece(44, 53, board21);
     int result21[8][8] = {
         {-4, -3, -2, -5, -6, -2, -3, -4},
         {-1, -1, -1, 0, -1, -1, -1, -1},
@@ -200,6 +210,247 @@ TEST(Movement, MovePiece) {
         {4, 3, 0, 5, 6, 2, 3, 4},
     };
     SAME_BOARD(board21, result21);
+    ASSERT_EQ(cap_piece, 2);
+}
+
+TEST(Movement, UndoMove) {
+    int cap_piece;
+    int promotion_pos = -1;
+    int board[8][8] = {
+        {-4, -3, -2, -5, -6, -2, -3, -4},
+        {-1, -1, -1, -1, -1, -1, -1, -1},
+        {0, 0, 0, 0, 0, 0, 0, 0},
+        {0, 0, 0, 0, 0, 0, 0, 0},
+        {0, 0, 0, 0, 0, 0, 0, 0},
+        {0, 0, 0, 0, 0, 0, 0, 0},
+        {1, 1, 1, 1, 1, 1, 1, 1},
+        {4, 3, 2, 5, 6, 2, 3, 4},
+    };
+    int result[8][8] = {
+        {-4, -3, -2, -5, -6, -2, -3, -4},
+        {-1, -1, -1, -1, -1, -1, -1, -1},
+        {0, 0, 0, 0, 0, 0, 0, 0},
+        {0, 0, 0, 0, 0, 0, 0, 0},
+        {0, 0, 0, 0, 0, 0, 0, 0},
+        {0, 0, 0, 0, 0, 0, 0, 0},
+        {1, 1, 1, 1, 1, 1, 1, 1},
+        {4, 3, 2, 5, 6, 2, 3, 4},
+    };
+    cap_piece = move_piece(60, 50, board);
+    undo_move(60, 50, board, cap_piece, promotion_pos);
+    SAME_BOARD(board, result);
+
+    //en passant
+    int board2[8][8] = {
+        {-4, -3, -2, -5, -6, -2, -3, -4},
+        {-1, -1, 0, -1, -1, -1, -1, -1},
+        {0, 0, 0, 0, 0, 0, 0, 0},
+        {0, 1, -1, 0, 0, 0, 0, 0},
+        {0, 0, 0, 0, 0, 0, 0, 0},
+        {0, 0, 0, 0, 0, 0, 0, 0},
+        {1, 0, 1, 1, 1, 1, 1, 1},
+        {4, 3, 2, 5, 6, 2, 3, 4},
+    };
+    int result2[8][8] = {
+        {-4, -3, -2, -5, -6, -2, -3, -4},
+        {-1, -1, 0, -1, -1, -1, -1, -1},
+        {0, 0, 0, 0, 0, 0, 0, 0},
+        {0, 1, -1, 0, 0, 0, 0, 0},
+        {0, 0, 0, 0, 0, 0, 0, 0},
+        {0, 0, 0, 0, 0, 0, 0, 0},
+        {1, 0, 1, 1, 1, 1, 1, 1},
+        {4, 3, 2, 5, 6, 2, 3, 4},
+    };
+    cap_piece = move_piece(31, 22, board2);
+    undo_move(31, 22, board2, cap_piece, promotion_pos);
+    SAME_BOARD(board2, result2);
+
+    int board3[8][8] = {
+        {-4, -3, -2, -5, -6, -2, -3, -4},
+        {0, -1, -1, -1, -1, -1, -1, -1},
+        {0, 0, 0, 0, 0, 0, 0, 0},
+        {-1, 1, 0, 0, 0, 0, 0, 0},
+        {0, 0, 0, 0, 0, 0, 0, 0},
+        {0, 0, 0, 0, 0, 0, 0, 0},
+        {1, 0, 1, 1, 1, 1, 1, 1},
+        {4, 3, 2, 5, 6, 2, 3, 4},
+    };
+    int result3[8][8] = {
+        {-4, -3, -2, -5, -6, -2, -3, -4},
+        {0, -1, -1, -1, -1, -1, -1, -1},
+        {0, 0, 0, 0, 0, 0, 0, 0},
+        {-1, 1, 0, 0, 0, 0, 0, 0},
+        {0, 0, 0, 0, 0, 0, 0, 0},
+        {0, 0, 0, 0, 0, 0, 0, 0},
+        {1, 0, 1, 1, 1, 1, 1, 1},
+        {4, 3, 2, 5, 6, 2, 3, 4},
+    };
+    cap_piece = move_piece(31, 20, board3);
+    undo_move(31, 20, board3, cap_piece, promotion_pos);
+    SAME_BOARD(board3, result3);
+
+    int board4[8][8] = {
+        {-4, -3, -2, -5, -6, -2, -3, -4},
+        {-1, 0, -1, -1, -1, -1, -1, -1},
+        {0, 0, 0, 0, 0, 0, 0, 0},
+        {0, 0, 0, 0, 0, 0, 0, 0},
+        {1, -1, 1, 0, 0, 0, 0, 0},
+        {0, 0, 0, 0, 0, 0, 0, 0},
+        {0, 1, 0, 1, 1, 1, 1, 1},
+        {4, 3, 2, 5, 6, 2, 3, 4},
+    };
+    int result4[8][8] = {
+        {-4, -3, -2, -5, -6, -2, -3, -4},
+        {-1, 0, -1, -1, -1, -1, -1, -1},
+        {0, 0, 0, 0, 0, 0, 0, 0},
+        {0, 0, 0, 0, 0, 0, 0, 0},
+        {1, -1, 1, 0, 0, 0, 0, 0},
+        {0, 0, 0, 0, 0, 0, 0, 0},
+        {0, 1, 0, 1, 1, 1, 1, 1},
+        {4, 3, 2, 5, 6, 2, 3, 4},
+    };
+    cap_piece = move_piece(41, 52, board4);
+    undo_move(41, 52, board4, cap_piece, promotion_pos);
+    cap_piece = move_piece(41, 50, board4);
+    undo_move(41, 50, board4, cap_piece, promotion_pos);
+    SAME_BOARD(board4, result4);
+
+    //capturing regularly no en passant
+    int board5[8][8] = {
+        {-4, -3, -2, -5, -6, 0, -3, -4},
+        {-1, 0, -1, -1, -1, -1, 0, -1},
+        {0, 0, 0, 0, 0, 0, -2, 0},
+        {0, 0, 0, 0, 0, 1, -1, 0},
+        {1, -1, 0, 0, 0, 0, 0, 0},
+        {2, 0, 0, 0, 0, 0, 0, 0},
+        {0, 1, 1, 1, 1, 0, 1, 1},
+        {4, 3, 0, 5, 6, 2, 3, 4},
+    };
+    int result5[8][8] = {
+        {-4, -3, -2, -5, -6, 0, -3, -4},
+        {-1, 0, -1, -1, -1, -1, 0, -1},
+        {0, 0, 0, 0, 0, 0, -2, 0},
+        {0, 0, 0, 0, 0, 1, -1, 0},
+        {1, -1, 0, 0, 0, 0, 0, 0},
+        {2, 0, 0, 0, 0, 0, 0, 0},
+        {0, 1, 1, 1, 1, 0, 1, 1},
+        {4, 3, 0, 5, 6, 2, 3, 4},
+    };
+    cap_piece = move_piece(41, 50, board5);
+    undo_move(41, 50, board5, cap_piece, promotion_pos);
+    cap_piece = move_piece(35, 26, board5);
+    undo_move(35, 26, board5, cap_piece, promotion_pos);
+    SAME_BOARD(board5, result5);
+
+    //castle
+    int board6[8][8] = {
+        {-4, 0, 0, 0, -6, 0, 0, -4},
+        {0, 0, 0, 0, 0, 0, 0, 0},
+        {0, 0, 0, 0, 0, 0, 0, 0},
+        {0, 0, 0, 0, 0, 0, 0, 0},
+        {0, 0, 0, 0, 0, 0, 0, 0},
+        {0, 0, 0, 0, 0, 0, 0, 0},
+        {0, 0, 0, 0, 0, 0, 0, 0},
+        {4, 0, 0, 0, 6, 0, 0, 4},
+    };
+    int result6[8][8] = {
+        {-4, 0, 0, 0, -6, 0, 0, -4},
+        {0, 0, 0, 0, 0, 0, 0, 0},
+        {0, 0, 0, 0, 0, 0, 0, 0},
+        {0, 0, 0, 0, 0, 0, 0, 0},
+        {0, 0, 0, 0, 0, 0, 0, 0},
+        {0, 0, 0, 0, 0, 0, 0, 0},
+        {0, 0, 0, 0, 0, 0, 0, 0},
+        {4, 0, 0, 0, 6, 0, 0, 4},
+    };
+    //white castles
+    cap_piece = move_piece(74, 76, board5);
+    undo_move(74, 76, board5, cap_piece, promotion_pos);
+    cap_piece = move_piece(74, 72, board5);
+    undo_move(74, 72, board5, cap_piece, promotion_pos);
+    //black castles
+    cap_piece = move_piece(4, 6, board5);
+    undo_move(4, 6, board5, cap_piece, promotion_pos);
+    cap_piece = move_piece(4, 2, board5);
+    undo_move(4, 2, board5, cap_piece, promotion_pos);
+    SAME_BOARD(board6, result6);
+
+    //promotion
+    int board7[8][8] = {
+        {0, 0, 0, 0, 0, 0, 0, 0},
+        {0, 0, 0, 0, 1, 0, 0, 0},
+        {0, 0, 0, 0, 0, 0, 0, 0},
+        {0, 0, 0, 0, 0, 0, 0, 0},
+        {0, 0, 0, 0, 0, 0, 0, 0},
+        {0, 0, 0, 0, 0, 0, 0, 0},
+        {0, 0, 0, 0, 0, 0, 0, 0},
+        {0, 0, 0, 0, 0, 0, 0, 0},
+    };
+    int result7[8][8] = {
+        {0, 0, 0, 0, 0, 0, 0, 0},
+        {0, 0, 0, 0, 1, 0, 0, 0},
+        {0, 0, 0, 0, 0, 0, 0, 0},
+        {0, 0, 0, 0, 0, 0, 0, 0},
+        {0, 0, 0, 0, 0, 0, 0, 0},
+        {0, 0, 0, 0, 0, 0, 0, 0},
+        {0, 0, 0, 0, 0, 0, 0, 0},
+        {0, 0, 0, 0, 0, 0, 0, 0},
+    };
+    cap_piece = move_piece(14, 4, board7);
+    promotion_pos = check_pawn_promotion(board7);
+    undo_move(14, 4, board7, cap_piece, promotion_pos);
+    SAME_BOARD(board7, result7);
+
+    int board8[8][8] = {
+        {0, 0, 0, 0, 0, 0, 0, 0},
+        {0, 0, 0, 0, 0, 0, 0, 0},
+        {0, 0, 0, 0, 0, 0, 0, 0},
+        {0, 0, 0, 0, 0, 0, 0, 0},
+        {0, 0, 0, 0, 0, 0, 0, 0},
+        {0, 0, 0, 0, 0, 0, 0, 0},
+        {0, 0, 0, 0, -1, 0, 0, 0},
+        {0, 0, 0, 0, 0, 0, 0, 0},
+    };
+    int result8[8][8] = {
+        {0, 0, 0, 0, 0, 0, 0, 0},
+        {0, 0, 0, 0, 0, 0, 0, 0},
+        {0, 0, 0, 0, 0, 0, 0, 0},
+        {0, 0, 0, 0, 0, 0, 0, 0},
+        {0, 0, 0, 0, 0, 0, 0, 0},
+        {0, 0, 0, 0, 0, 0, 0, 0},
+        {0, 0, 0, 0, -1, 0, 0, 0},
+        {0, 0, 0, 0, 0, 0, 0, 0},
+    };
+    cap_piece = move_piece(64, 74, board8);
+    promotion_pos = check_pawn_promotion(board8);
+    undo_move(64, 74, board8, cap_piece, promotion_pos);
+    SAME_BOARD(board8, result8);
+
+    //taking with promotion
+    int board9[8][8] = {
+        {0, 0, 0, -2, 0, 0, 0, 0},
+        {0, 0, 0, 0, 1, 0, 0, 0},
+        {0, 0, 0, 0, 0, 0, 0, 0},
+        {0, 0, 0, 0, 0, 0, 0, 0},
+        {0, 0, 0, 0, 0, 0, 0, 0},
+        {0, 0, 0, 0, 0, 0, 0, 0},
+        {0, 0, 0, 0, 0, 0, 0, 0},
+        {0, 0, 0, 0, 0, 0, 0, 0},
+    };
+    int result9[8][8] = {
+        {0, 0, 0, -2, 0, 0, 0, 0},
+        {0, 0, 0, 0, 1, 0, 0, 0},
+        {0, 0, 0, 0, 0, 0, 0, 0},
+        {0, 0, 0, 0, 0, 0, 0, 0},
+        {0, 0, 0, 0, 0, 0, 0, 0},
+        {0, 0, 0, 0, 0, 0, 0, 0},
+        {0, 0, 0, 0, 0, 0, 0, 0},
+        {0, 0, 0, 0, 0, 0, 0, 0},
+    };
+    cap_piece = move_piece(14, 3, board9);
+    promotion_pos = check_pawn_promotion(board9);
+    undo_move(14, 3, board9, cap_piece, promotion_pos);
+    SAME_BOARD(board9, result9);
 }
 
 //for movement test going off board, capturing enemy, and being blocked by ally (white and black)
@@ -1419,25 +1670,50 @@ TEST(Movement, EnPassant) {
 
 TEST(Movement, PawnPromotion) {
     int board[8][8] = {
-        {1, 1, 1, 1, 1, 1, 1, 1},
-        {1, 1, 1, 1, 1, 1, 1, 1},
+        {0, 0, 0, 1, 0, 0, 0, 0},
         {0, 0, 0, 0, 0, 0, 0, 0},
         {0, 0, 0, 0, 0, 0, 0, 0},
         {0, 0, 0, 0, 0, 0, 0, 0},
         {0, 0, 0, 0, 0, 0, 0, 0},
-        {-1, -1, -1, -1, -1, -1, -1, -1},
-        {-1, -1, -1, -1, -1, -1, -1, -1},
+        {0, 0, 0, 0, 0, 0, 0, 0},
+        {0, 0, 0, 0, 0, 0, 0, 0},
+        {0, 0, 0, 0, 0, 0, 0, 0},
     };
-    check_pawn_promotion(board);
+    int pos = check_pawn_promotion(board);
     int correct[8][8] = {
-        {5, 5, 5, 5, 5, 5, 5, 5}, //all pawns at last row promoted
-        {1, 1, 1, 1, 1, 1, 1, 1},
+        {0, 0, 0, 5, 0, 0, 0, 0},
         {0, 0, 0, 0, 0, 0, 0, 0},
         {0, 0, 0, 0, 0, 0, 0, 0},
         {0, 0, 0, 0, 0, 0, 0, 0},
         {0, 0, 0, 0, 0, 0, 0, 0},
-        {-1, -1, -1, -1, -1, -1, -1, -1},
-        {-5, -5, -5, -5, -5, -5, -5, -5},
+        {0, 0, 0, 0, 0, 0, 0, 0},
+        {0, 0, 0, 0, 0, 0, 0, 0},
+        {0, 0, 0, 0, 0, 0, 0, 0},
     };
     SAME_BOARD(board, correct);
+    ASSERT_EQ(pos, 3);
+
+    int board2[8][8] = {
+        {0, 0, 0, 0, 0, 0, 0, 0},
+        {0, 0, 0, 0, 0, 0, 0, 0},
+        {0, 0, 0, 0, 0, 0, 0, 0},
+        {0, 0, 0, 0, 0, 0, 0, 0},
+        {0, 0, 0, 0, 0, 0, 0, 0},
+        {0, 0, 0, 0, 0, 0, 0, 0},
+        {0, 0, 0, 0, 0, 0, 0, 0},
+        {0, 0, 0, 0, -1, 0, 0, 0},
+    };
+    pos = check_pawn_promotion(board2);
+    int correct2[8][8] = {
+        {0, 0, 0, 0, 0, 0, 0, 0},
+        {0, 0, 0, 0, 0, 0, 0, 0},
+        {0, 0, 0, 0, 0, 0, 0, 0},
+        {0, 0, 0, 0, 0, 0, 0, 0},
+        {0, 0, 0, 0, 0, 0, 0, 0},
+        {0, 0, 0, 0, 0, 0, 0, 0},
+        {0, 0, 0, 0, 0, 0, 0, 0},
+        {0, 0, 0, 0, -5, 0, 0, 0},
+    };
+    SAME_BOARD(board2, correct2);
+    ASSERT_EQ(pos, 74);
 }
