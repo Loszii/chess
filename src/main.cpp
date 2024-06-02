@@ -66,7 +66,7 @@ int main() {
     int b_king_pos = 4;
     bool w_check = false;
     bool b_check = false;
-    int past_moves[2] = {0, 0}; //first is start position second is last position of the previous move made on board
+    int past_moves[2] = {-1, -1}; //first is start position second is last position of the previous move made on board
     std::vector<int> moves;
     
     std::unordered_map<int, Texture2D> skins = get_skins(); //skin textures maps num to Texture2D
@@ -93,17 +93,23 @@ int main() {
 
         //shades in selected squares
         if (select) {
-            drawSelect(coord, select_pos, select_texture);
+            drawSelect(coord, select_pos, select_texture, Color{0, 0, 0, 150});
             for (int i=0; i < (int)moves.size(); i++) {
-                drawSelect(coord, moves[i], select_texture);
+                drawSelect(coord, moves[i], select_texture, Color{0, 0, 0, 150});
             }
         }
 
         //check notifier
         if (w_check) {
-            drawSelect(coord, w_king_pos, select_texture);
+            drawSelect(coord, w_king_pos, select_texture, Color{255, 0, 0, 100});
         } else if (b_check) {
-            drawSelect(coord, b_king_pos, select_texture);
+            drawSelect(coord, b_king_pos, select_texture, Color{255, 0, 0, 100});
+        }
+
+        //draw in last move:
+        if (past_moves[0] != -1) {
+            drawSelect(coord, past_moves[0], select_texture, Color{0, 0, 255, 100});
+            drawSelect(coord, past_moves[1], select_texture, Color{0, 0, 255, 100});
         }
 
         //checking for game over and displaying end game status
@@ -160,13 +166,13 @@ int main() {
                 past_moves[0] = result[0];
                 past_moves[1] = result[1];
                 move_piece(result[0], result[1], board);
-
-                updater(board, w_turn, w_king_pos, b_king_pos, w_check, b_check, past_moves, w_castle, b_castle, game_over, en_passant, promotion_pos);
                 if (w_turn) {
                     w_turn = false;
                 } else { //for now this will only run since engine always black
                     w_turn = true;
                 }
+
+                updater(board, w_turn, w_king_pos, b_king_pos, w_check, b_check, past_moves, w_castle, b_castle, game_over, en_passant, promotion_pos);
             }
         }
     }

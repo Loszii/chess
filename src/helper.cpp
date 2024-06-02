@@ -74,11 +74,11 @@ void drawGame(int board[8][8], std::unordered_map<int, std::tuple<int, int>> coo
     }
 }
 
-void drawSelect(std::unordered_map<int, std::tuple<int, int>> coord, int pos, Texture2D select_texture) {
+void drawSelect(std::unordered_map<int, std::tuple<int, int>> coord, int pos, Texture2D select_texture, Color color) {
     //shades in a square at the given pos of form i*10 + j
     int x = std::get<0>(coord[pos]);
     int y = std::get<1>(coord[pos]);
-    DrawTextureEx(select_texture, (Vector2){(float)x, (float)y}, 0, 1, (Color){50, 0, 0, 100});
+    DrawTextureEx(select_texture, (Vector2){(float)x, (float)y}, 0, 1, color);
 }
 
 int get_index(int x, int y, std::unordered_map<int, std::tuple<int, int>> coord) {

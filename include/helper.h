@@ -18,7 +18,7 @@ std::unordered_map<int, std::tuple<int, int>> get_coord();
 
 void drawGame(int board[8][8], std::unordered_map<int, std::tuple<int, int>> coord, std::unordered_map<int, Texture2D> skins, Texture2D board_texture);
 
-void drawSelect(std::unordered_map<int, std::tuple<int, int>> coord, int pos, Texture2D select_texture);
+void drawSelect(std::unordered_map<int, std::tuple<int, int>> coord, int pos, Texture2D select_texture, Color color);
 
 int get_index(int x, int y, std::unordered_map<int, std::tuple<int, int>> coord);
 
