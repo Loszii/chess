@@ -1,30 +1,46 @@
 #include <iostream>
 #include <vector>
 #include <random>
+#include <unordered_map>
 #include "engine.h"
 #include "movement.h"
 
 //TODO:
-/*improve eval function, add alpha beta pruning, simplify code and use the main.cpp update function for updating game state*/
+/*improve eval function, add alpha beta pruning, differentiate checkmate and stalemate instead of just returning inf when no moves*/
 
-
-const int scale[8][8] = {
+const double scale[8][8] = {
     {1, 1, 1, 1, 1, 1, 1, 1},
-    {1, 2, 2, 2, 2, 2, 2, 1},
-    {1, 2, 3, 3, 3, 3, 2, 1},
-    {1, 2, 3, 4, 4, 3, 2, 1},
-    {1, 2, 3, 4, 4, 3, 2, 1},
-    {1, 2, 3, 3, 3, 3, 2, 1},
-    {1, 2, 2, 2, 2, 2, 2, 1},
+    {1, 2, 1.1, 1.1, 1.1, 1.1, 1.1, 1},
+    {1, 1.1, 1.2, 1.2, 1.2, 1.2, 1.1, 1},
+    {1, 1.1, 1.2, 1.3, 1.3, 1.2, 1.1, 1},
+    {1, 1.1, 1.2, 1.3, 1.3, 1.2, 1.1, 1},
+    {1, 1.1, 1.2, 1.2, 1.2, 1.2, 1.1, 1},
+    {1, 1.1, 1.1, 1.1, 1.1, 1.1, 1.1, 1},
     {1, 1, 1, 1, 1, 1, 1, 1},
 };
+
+std::unordered_map<int, int> values; //takes in piece and returns its value
+
+void fill_values() {
+    values[0] = 0;
+    values[1] = 10;
+    values[2] = 30;
+    values[3] = 30;
+    values[4] = 50;
+    values[5] = 90;
+    values[-1] = -10;
+    values[-2] = -30;
+    values[-3] = -30;
+    values[-4] = -50;
+    values[-5] = -90;
+}
 
 int eval_board(int board[8][8]) {
     //returns a number evaluating the board, lower better for black, bigger better for white
     int score = 0;
     for (int i=0;i < 8; i++) {
         for (int j=0; j < 8; j++) {
-            score += board[i][j]; //* scale[i][j] for now just add all pieces
+            score += values[board[i][j]] * scale[i][j];
         }
     }
     return score;

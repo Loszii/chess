@@ -81,6 +81,8 @@ int main() {
     bool select = false;
     int select_pos; //position of select in form i*10 + j
 
+    fill_values(); //for engine
+
     //Game loop
     while (!WindowShouldClose()) {
 
