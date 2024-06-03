@@ -66,3 +66,10 @@ target_link_libraries(
 
 include(GoogleTest)
 gtest_discover_tests(testing)
+
+#for installer
+include (InstallRequiredSystemLibraries)
+install(TARGETS chess RUNTIME DESTINATION bin)
+install(DIRECTORY res DESTINATION .)
+set(CPACK_PACKAGE_NAME "jaden chess engine")
+include(CPack)

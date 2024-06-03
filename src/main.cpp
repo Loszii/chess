@@ -7,8 +7,7 @@
 #include "engine.h"
 #include "raylib.h"
 
-//to do: draw if no material in future allow promotion to be a selection, then create a engine to play against
-
+//to do: draw if no material, make color given random, rematch button and score, timer as well
 /*
 General rule is no pawns on the board and both sides of either of the following for insufficcient material:
 1.a lone king
@@ -20,19 +19,23 @@ General rule is no pawns on the board and both sides of either of the following 
 this means accessing a position is [pos/10][pos%10] and saving a pos is i*10 + j*/
 
 void updater(int board[8][8], bool w_turn, int& w_king_pos, int& b_king_pos, bool& w_check, bool& b_check, int past_moves[2], bool w_castle[4], bool b_castle[4], int& game_over, int& en_passant, int& promotion_pos) {
-    //code to run after moving piece
+    //code to run after moving piece, if called with w_turn = true then will check these conditions for white before they can move
     //check for pawn promotion before below since can affect check/castle
+    en_passant = check_en_passant(board, past_moves[0], past_moves[1]);
     promotion_pos = check_pawn_promotion(board);
     //checks
     std::vector<int> king_coord = get_king_coord(board);
     w_king_pos = king_coord[0];
     b_king_pos = king_coord[1];
-    w_check = in_check(board, true);
-    b_check = in_check(board, false);
-    //en passant and castle
-    en_passant = check_en_passant(board, past_moves[0], past_moves[1]);
-    check_castle_conditions(board, w_castle, true);
-    check_castle_conditions(board, b_castle, false);
+    if (w_turn) {
+        w_check = in_check(board, true);
+        b_check = false; //black just moved so must be false
+        check_castle_conditions(board, w_castle, true);
+    } else {
+        w_check = false;
+        b_check = in_check(board, false);
+        check_castle_conditions(board, b_castle, false);
+    }
     //checkmate or stalemate
     check_game_state(board, game_over, w_check, b_check, w_turn, en_passant);
 }

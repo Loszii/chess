@@ -5,12 +5,11 @@
 #include "engine.h"
 #include "movement.h"
 
-//TODO:
-/*improve eval function, add alpha beta pruning, differentiate checkmate and stalemate instead of just returning inf when no moves*/
+//TODO: improve eval function, add alpha beta pruning
 
 const double scale[8][8] = {
     {1, 1, 1, 1, 1, 1, 1, 1},
-    {1, 2, 1.1, 1.1, 1.1, 1.1, 1.1, 1},
+    {1, 1.1, 1.1, 1.1, 1.1, 1.1, 1.1, 1},
     {1, 1.1, 1.2, 1.2, 1.2, 1.2, 1.1, 1},
     {1, 1.1, 1.2, 1.3, 1.3, 1.2, 1.1, 1},
     {1, 1.1, 1.2, 1.3, 1.3, 1.2, 1.1, 1},
@@ -28,11 +27,13 @@ void fill_values() {
     values[3] = 30;
     values[4] = 50;
     values[5] = 90;
+    values[6] = 20;
     values[-1] = -10;
     values[-2] = -30;
     values[-3] = -30;
     values[-4] = -50;
     values[-5] = -90;
+    values[-6] = -20;
 }
 
 int eval_board(int board[8][8]) {
@@ -72,6 +73,11 @@ int minimax_helper(int board[8][8], bool w_castle[4], bool b_castle[4], bool w_t
                 undo_move(all_moves[i][0], all_moves[i][j], board, captured, promotion_pos);
             }
         }
+        if (all_moves.empty()) {
+            if (!in_check(board, w_turn)) {
+                return 0; //stalemate
+            }
+        }
         return best;
     } else {
         best = (int)INFINITY;
@@ -90,6 +96,11 @@ int minimax_helper(int board[8][8], bool w_castle[4], bool b_castle[4], bool w_t
 
                 best = std::min(best, minimax_helper(board, w_castle_copy, b_castle, !w_turn, en_passant, depth-1));
                 undo_move(all_moves[i][0], all_moves[i][j], board, captured, promotion_pos);
+            }
+        }
+        if (all_moves.empty()) {
+            if (!in_check(board, w_turn)) {
+                return 0; //stalemate
             }
         }
         return best;
