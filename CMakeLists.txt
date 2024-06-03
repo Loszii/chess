@@ -33,6 +33,12 @@ set(HEADERS
     include/movement.h
     include/engine.h)
 
+
+#to statically link
+set(CMAKE_FIND_LIBRARY_SUFFIXES ".a")
+set(BUILD_SHARED_LIBS OFF)
+set(CMAKE_EXE_LINKER_FLAGS "-static")
+
 #for main chess
 add_executable(
   chess
@@ -68,8 +74,8 @@ include(GoogleTest)
 gtest_discover_tests(testing)
 
 #for installer
-include (InstallRequiredSystemLibraries)
 install(TARGETS chess RUNTIME DESTINATION bin)
 install(DIRECTORY res DESTINATION .)
 set(CPACK_PACKAGE_NAME "jaden chess engine")
+set(CPACK_PACKAGE_VERSION "1.0")
 include(CPack)
