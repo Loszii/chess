@@ -4,6 +4,7 @@
 #include <unordered_map>
 #include "engine.h"
 #include "movement.h"
+#include "helper.h"
 
 //TODO: improve eval function, add alpha beta pruning
 
