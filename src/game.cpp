@@ -3,7 +3,6 @@
 #include <tuple>
 #include <vector>
 #include "game.h"
-#include "movement.h"
 #include "raylib.h"
 
 Game::Game() {
@@ -68,7 +67,7 @@ void Game::check_for_selection(int pos) {
         //below code runs if there is a move to select
         select = true;
         select_pos = pos;
-        moves = get_legal_moves(board, select_pos, w_castle, b_castle, w_turn, en_passant); //gets possible moves
+        moves = get_legal_moves(pos); //gets possible moves
     } else {
         select = false;
     }
@@ -105,12 +104,11 @@ std::vector<int> Game::get_king_coord() {
     return kings;
 }
 
+//make this check_check() and just sets if whoevers turn it is is in check
 bool Game::in_check() {
     //given a board and a turn, if w_turn is true check is white is in check
     std::vector<int> king_positions = get_king_coord();
-    bool disable_castle[4] = {false}; //a king can never take another king with check
-    int disable_en_passant = -1; //an en passant can never capture a king
-    std::vector<int> all_trajectories = get_all_trajectories(board, disable_castle, disable_castle, w_turn, disable_en_passant);
+    std::vector<int> all_trajectories = get_all_trajectories();
     int king_pos;
     if (w_turn) {
         king_pos = king_positions[0];
@@ -137,7 +135,7 @@ void Game::check_castle_conditions() {
 
     bool disable_castle[4] = {false}; //a castle of opponent cannot impact other castle opportunity
     int disable_en_passant = -1; //an en passant cannot interfere with castling
-    std::vector<int> all_trajectories = get_all_trajectories(board, disable_castle, disable_castle, w_turn, disable_en_passant);
+    std::vector<int> all_trajectories = get_all_trajectories();
 
     //white
     //perms
@@ -199,7 +197,7 @@ void Game::check_game_state() {
     }
     //cannot disable en_passant as it can be the only move left
     //dont need to know if can castle since if can castle then game_over can't be true (space to move and not in checks)
-    std::vector<std::vector<int>> all_legal_moves = get_all_legal_moves(board, disable_castle, disable_castle, w_turn, en_passant);
+    std::vector<std::vector<int>> all_legal_moves = get_all_legal_moves();
     if ((w_turn && ((int)all_legal_moves.size() == 0 && w_check)) || (!w_turn && ((int)all_legal_moves.size() == 0 && b_check))) {
         game_over = scale * 2; //checkmate
     } else if ((int)all_legal_moves.size() == 0) {
@@ -207,7 +205,7 @@ void Game::check_game_state() {
     }
 }
 
-int Game::check_en_passant() {
+void Game::check_en_passant() {
     //return -1 if no en passant, if there is this function returns the position of square enemy pawn can take
     //of form i*10 + j
     int start_pos = past_moves[0];
@@ -218,33 +216,34 @@ int Game::check_en_passant() {
         //white pawn
         diff = end_pos - start_pos;
         if (diff == -20) {
-            return start_pos - 10;
+            en_passant = start_pos - 10;
         }
     } else if (board[end_pos/10][end_pos%10] == -1) {
         diff = end_pos - start_pos;
         if (diff == 20) {
-            return start_pos + 10;
+            en_passant = start_pos + 10;
         }
     } else {
-        return -1;
+        en_passant = -1;
     }
-    return -1;
 }
 
-int Game::check_pawn_promotion() {
+void Game::check_pawn_promotion() {
     //given a board, promotes a pawn to a queen automatically if it make it to the end of board
     //return pos of promotion or -1 if none
     for (int i=0; i < 8; i++) {
         if (board[0][i] == 1) {
             board[0][i] = 5;
-            return i;
+            promotion_pos =  i;
+            return;
         }
         if (board[7][i] == -1) {
             board[7][i] = -5;
-            return 70+i;
+            promotion_pos = 70+i;
+            return;
         }
     }
-    return -1;
+    promotion_pos = -1;
 }
 
 void Game::updater() {
@@ -252,8 +251,9 @@ void Game::updater() {
     //if called with w_turn = true then will check these conditions for white before they can move
     
     //check for pawn promotion before below since can affect check/castle
-    en_passant = check_en_passant();
-    promotion_pos = check_pawn_promotion();
+    check_en_passant();
+    check_pawn_promotion();
+    check_castle_conditions();
     //checks
     std::vector<int> king_coord = get_king_coord();
     w_king_pos = king_coord[0];
@@ -261,11 +261,9 @@ void Game::updater() {
     if (w_turn) {
         w_check = in_check();
         b_check = false; //black just moved so must be false
-        check_castle_conditions();
     } else {
         w_check = false;
         b_check = in_check();
-        check_castle_conditions();
     }
     //checkmate or stalemate
     check_game_state();

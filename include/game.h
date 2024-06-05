@@ -6,8 +6,10 @@
 
 #pragma once
 
+//maybe make class with get_pawn_moves private methods and en passant n stuff
 struct Game {
 
+    //vars
     const int SQUARE_WIDTH = 96;
     const int BEVEL = 8;
     const double SCALE = 0.75;
@@ -32,6 +34,7 @@ struct Game {
     int b_king_pos = 4;
     bool w_check = false;
     bool b_check = false;
+    int captured_piece = -1;
     int past_moves[2] = {-1, -1}; //first is start position second is last position of the previous move made on board
     std::vector<int> moves; //stores all moves for selected piece
 
@@ -43,18 +46,35 @@ struct Game {
     bool select = false;
     int select_pos = -1; //position of select in form i*10 + j
 
+    //constructor
     Game();
 
+    //drawing
     void draw_game();
     void draw_select(int pos, Color color);
 
+    //functionality
     void check_for_selection(int pos);
     int get_index(int x, int y);
     std::vector<int> get_king_coord();
     bool in_check();
     void check_castle_conditions();
     void check_game_state();
-    int check_en_passant();
-    int check_pawn_promotion();
+    void check_en_passant();
+    void check_pawn_promotion();
     void updater();
+
+    //movement
+    void move_piece(int start_pos, int end_pos);
+    void undo_move(int start_pos, int end_pos);
+    //below functions take in a temporary storage vector and add the correct moves to it
+    void get_pawn_moves(int i, int j, std::vector<int>& temp);
+    void get_bishop_moves(int i, int j, std::vector<int>& temp);
+    void get_knight_moves(int i, int j, std::vector<int>& temp);
+    void get_rook_moves(int i, int j, std::vector<int>& temp);
+    void get_king_moves(int i, int j, std::vector<int>& temp, bool castle[4]);
+    std::vector<int> get_trajectory(int pos);
+    std::vector<int> get_all_trajectories();
+    std::vector<int> get_legal_moves(int pos);
+    std::vector<std::vector<int>> get_all_legal_moves();
 };

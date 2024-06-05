@@ -3,9 +3,7 @@
 #include <random>
 #include <unordered_map>
 #include "engine.h"
-#include "movement.h"
-#include "helper.h"
-
+#include "game.h"
 //TODO: improve eval function, add alpha beta pruning
 /*
 const double scale[8][8] = {
@@ -167,11 +165,11 @@ std::vector<int> minimax(int board[8][8], bool w_castle[4], bool b_castle[4], bo
     return result;
 }
 */
-std::vector<int> make_best_move(int board[8][8], bool w_castle[4], bool b_castle[4], bool w_turn, int en_passant) {
+std::vector<int> make_best_move(Game game) {
     //returns an array of the start pos / end pos of best move, for now w_turn is always false since engine is always black
     //std::vector<int> result = minimax(board, w_castle, b_castle, w_turn, en_passant, 3);
     //for now lets implement random moves
-    std::vector<std::vector<int>> all_moves = get_all_legal_moves(board, w_castle, b_castle, w_turn, en_passant);
+    std::vector<std::vector<int>> all_moves = game.get_all_legal_moves();
     std::random_device rd;
     std::mt19937 gen(rd());
     std::uniform_int_distribution<> distr1(0, (int)all_moves.size() - 1);
@@ -180,7 +178,6 @@ std::vector<int> make_best_move(int board[8][8], bool w_castle[4], bool b_castle
     int index2 = distr2(gen);
     int start_pos = all_moves[index1][0];
     int end_pos = all_moves[index1][index2];
-
     std::vector<int> result;
     result.push_back(start_pos);
     result.push_back(end_pos);

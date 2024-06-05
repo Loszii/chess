@@ -2,13 +2,11 @@
 #include <unordered_map>
 #include <tuple>
 #include <vector>
-#include "helper.h"
-#include "movement.h"
 #include "engine.h"
 #include "raylib.h"
 #include "game.h"
 
-//to do: draw if no material, make color given random, rematch button and score, timer as well
+//to do: draw if no material, make color given random
 /*
 General rule is no pawns on the board and both sides of either of the following for insufficcient material:
 1.a lone king
@@ -17,8 +15,6 @@ General rule is no pawns on the board and both sides of either of the following 
 */
 //the threefold repition rule can be calculated by hashing the board and counting its occurance, once one hits 3 it is a draw
 //must also hash castle, and play turn/en passant
-
-//add engine test cases
 
 /*in this program positions on the board are represented by i*10 + j for simplicity and stored as an integer
 this means accessing a position is [pos/10][pos%10] and saving a pos is i*10 + j*/
@@ -95,7 +91,7 @@ int main() {
                                 if (pos == game.moves[i]) {
                                     game.past_moves[0] = game.select_pos;
                                     game.past_moves[1] = pos;
-                                    move_piece(game.select_pos, pos, game.board);
+                                    game.move_piece(game.select_pos, pos);
                                     if (game.w_turn) {
                                         game.w_turn = false;
                                     } else {
@@ -117,11 +113,11 @@ int main() {
                 }
             } else {
                 //engine code
-                std::vector<int> result = make_best_move(game.board, game.w_castle, game.b_castle, game.w_turn, game.en_passant);
+                std::vector<int> result = make_best_move(game);
                 //need to update past moves
                 game.past_moves[0] = result[0];
                 game.past_moves[1] = result[1];
-                move_piece(result[0], result[1], game.board);
+                game.move_piece(result[0], result[1]);
                 if (game.w_turn) {
                     game.w_turn = false;
                 } else { //for now this will only run since engine always black
