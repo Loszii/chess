@@ -6,6 +6,7 @@
 #include "movement.h"
 #include "engine.h"
 #include "raylib.h"
+#include "game.h"
 
 //to do: draw if no material, make color given random, rematch button and score, timer as well
 /*
@@ -21,6 +22,9 @@ General rule is no pawns on the board and both sides of either of the following 
 
 /*in this program positions on the board are represented by i*10 + j for simplicity and stored as an integer
 this means accessing a position is [pos/10][pos%10] and saving a pos is i*10 + j*/
+const int SCREEN_WIDTH = 784;
+const int SCREEN_HEIGHT = 784;
+const int FONT_SIZE = 100;
 
 int main() {
     //main game loop
@@ -29,43 +33,9 @@ int main() {
     InitWindow(SCREEN_WIDTH, SCREEN_HEIGHT, "Chess");
     SetTargetFPS(30);
 
-    int board[8][8] = {
-        {-4, -3, -2, -5, -6, -2, -3, -4},
-        {-1, -1, -1, -1, -1, -1, -1, -1},
-        {0, 0, 0, 0, 0, 0, 0, 0},
-        {0, 0, 0, 0, 0, 0, 0, 0},
-        {0, 0, 0, 0, 0, 0, 0, 0},
-        {0, 0, 0, 0, 0, 0, 0, 0},
-        {1, 1, 1, 1, 1, 1, 1, 1},
-        {4, 3, 2, 5, 6, 2, 3, 4},
-    };
+    Game game = Game();
 
-    int game_over = 0; //0 for none, 1 for stalemate, 2 for checkmate, -1 / -2 for black winning or stale
-    bool w_turn = true;
-    bool w_castle[4] = {false, true, false, true}; //[right temp, right perm, left temp, left perm]
-    bool b_castle[4] = {false, true, false, true};
-    int en_passant = -1; //-1 if no squares available, if there is then this will be the pos
-    int promotion_pos = -1; //-1 if nothing promoted, else will be square of promotion
-    int w_king_pos = 74;
-    int b_king_pos = 4;
-    bool w_check = false;
-    bool b_check = false;
-    int past_moves[2] = {-1, -1}; //first is start position second is last position of the previous move made on board
-    std::vector<int> moves;
-    
-    std::unordered_map<int, Texture2D> skins = get_skins(); //skin textures maps num to Texture2D
-    std::unordered_map<int, std::tuple<int, int>> coord = get_coord(); //mapping of indices to x-y coord
-    //2d indices of form vvvvv
-    //00, 01, 02, 03, 04, 05, 06, 07,
-    //10, 11, 12, 13, 14, 15, 16, 17...
-
-
-    Texture2D board_texture = LoadTexture("../res/board.png");
-    Texture2D select_texture = LoadTexture("../res/selector.png");
-    bool select = false;
-    int select_pos; //position of select in form i*10 + j
-
-    fill_values(); //for engine
+    //fill_values(); //for engine
 
     //Game loop
     while (!WindowShouldClose()) {
@@ -75,36 +45,36 @@ int main() {
         ClearBackground(WHITE);
         
         //draws pieces and board
-        drawGame(board, coord, skins, board_texture);
+        game.draw_game();
 
         //shades in selected squares
-        if (select) {
-            drawSelect(coord, select_pos, select_texture, Color{0, 0, 0, 150});
-            for (int i=0; i < (int)moves.size(); i++) {
-                drawSelect(coord, moves[i], select_texture, Color{0, 0, 0, 150});
+        if (game.select) {
+            game.draw_select(game.select_pos, Color{0, 0, 0, 150});
+            for (int i=0; i < (int)game.moves.size(); i++) {
+                game.draw_select(game.moves[i], Color{0, 0, 0, 150});
             }
         }
 
         //check notifier
-        if (w_check) {
-            drawSelect(coord, w_king_pos, select_texture, Color{255, 0, 0, 100});
-        } else if (b_check) {
-            drawSelect(coord, b_king_pos, select_texture, Color{255, 0, 0, 100});
+        if (game.w_check) {
+            game.draw_select(game.w_king_pos, Color{255, 0, 0, 100});
+        } else if (game.b_check) {
+            game.draw_select(game.b_king_pos, Color{255, 0, 0, 100});
         }
 
         //draw in last move:
-        if (past_moves[0] != -1) {
-            drawSelect(coord, past_moves[0], select_texture, Color{0, 0, 255, 100});
-            drawSelect(coord, past_moves[1], select_texture, Color{0, 0, 255, 100});
+        if (game.past_moves[0] != -1) {
+            game.draw_select(game.past_moves[0], Color{0, 0, 255, 100});
+            game.draw_select(game.past_moves[1], Color{0, 0, 255, 100});
         }
 
         //checking for game over and displaying end game status
-        if (game_over == 2 || game_over == -2) {
+        if (game.game_over == 2 || game.game_over == -2) {
             int text_width = MeasureText("CHECKMATE", FONT_SIZE);
             int x = (SCREEN_WIDTH - text_width) / 2;
             int y = (SCREEN_HEIGHT - FONT_SIZE) / 2;
             DrawText("CHECKMATE", x, y, FONT_SIZE, RED);
-        } else if (game_over == 1 || game_over == -1) {
+        } else if (game.game_over == 1 || game.game_over == -1) {
             int text_width = MeasureText("STALEMATE", FONT_SIZE);
             int x = (SCREEN_WIDTH - text_width) / 2;
             int y = (SCREEN_HEIGHT - FONT_SIZE) / 2;
@@ -114,58 +84,57 @@ int main() {
         EndDrawing();
 
         //game functionality 
-        if (game_over == 0) {
-            if (w_turn) {
+        if (game.game_over == 0) {
+            if (game.w_turn) {
                 if (IsMouseButtonPressed(0)) {
-                    int pos = get_index(GetMouseX(), GetMouseY(), coord);
+                    int pos = game.get_index(GetMouseX(), GetMouseY());
                     if (pos != -1) { //-1 means not a square
-                        if (select) {
+                        if (game.select) {
                             //check if mouse was clicked on a available move
-                            for (int i=0; i < (int)moves.size(); i++) {
-                                if (pos == moves[i]) {
-                                    past_moves[0] = select_pos;
-                                    past_moves[1] = pos;
-                                    move_piece(select_pos, pos, board);
-                                    if (w_turn) {
-                                        w_turn = false;
+                            for (int i=0; i < (int)game.moves.size(); i++) {
+                                if (pos == game.moves[i]) {
+                                    game.past_moves[0] = game.select_pos;
+                                    game.past_moves[1] = pos;
+                                    move_piece(game.select_pos, pos, game.board);
+                                    if (game.w_turn) {
+                                        game.w_turn = false;
                                     } else {
-                                        w_turn = true;
+                                        game.w_turn = true;
                                     }
-                                    select = false;
+                                    game.select = false;
                                     break;
                                 }
                             }
-                            if (select) { //if still selecting and didnt make viable move
-                                check_for_selection(board, select, select_pos, moves, w_turn, pos, w_castle, b_castle, en_passant); //checks to find selection and sets moves to all moves
+                            if (game.select) { //if still selecting and didnt make viable move
+                                game.check_for_selection(pos); //checks to find selection and sets moves to all moves
                             } else { //no longer selecting so we moved a piece
-                                updater(board, w_turn, w_king_pos, b_king_pos, w_check, b_check, past_moves, w_castle, b_castle, game_over, en_passant, promotion_pos);
+                                game.updater();
                             }
                         } else { //get pos of selection if piece
-                            check_for_selection(board, select, select_pos, moves, w_turn, pos, w_castle, b_castle, en_passant);
+                            game.check_for_selection(pos);
                         }
                     }
                 }
             } else {
                 //engine code
-                std::vector<int> result = make_best_move(board, w_castle, b_castle, w_turn, en_passant);
+                std::vector<int> result = make_best_move(game.board, game.w_castle, game.b_castle, game.w_turn, game.en_passant);
                 //need to update past moves
-                past_moves[0] = result[0];
-                past_moves[1] = result[1];
-                move_piece(result[0], result[1], board);
-                if (w_turn) {
-                    w_turn = false;
+                game.past_moves[0] = result[0];
+                game.past_moves[1] = result[1];
+                move_piece(result[0], result[1], game.board);
+                if (game.w_turn) {
+                    game.w_turn = false;
                 } else { //for now this will only run since engine always black
-                    w_turn = true;
+                    game.w_turn = true;
                 }
-
-                updater(board, w_turn, w_king_pos, b_king_pos, w_check, b_check, past_moves, w_castle, b_castle, game_over, en_passant, promotion_pos);
+                game.updater();
             }
         }
     }
     //unloading textures
-    UnloadTexture(board_texture);
-    UnloadTexture(select_texture);
-    for (auto& skin : skins) {
+    UnloadTexture(game.board_texture);
+    UnloadTexture(game.select_texture);
+    for (auto& skin : game.skins) {
         UnloadTexture(skin.second);
     }
 
