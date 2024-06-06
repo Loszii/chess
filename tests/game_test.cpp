@@ -1,8 +1,7 @@
 #include <gtest/gtest.h>
-#include <unordered_map>
-#include <tuple>
 #include <vector>
+#include <array>
 
-TEST(Game, idk) {
+TEST(Game, Perft) {
     //to do
 }

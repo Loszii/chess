@@ -7,6 +7,9 @@
 
 //to do: re-implement most features, maybe use two stacks with board structs to undo moves
 //board object will store en passant/castle/any board info
+//add unit tests once concrete on implementation
+
+//re-implement old features with old code, however use the Board object as a function call instead
 
 //all positions in this program are of form i*10 + j
 
@@ -17,18 +20,14 @@ int main() {
     //window
     InitWindow(SCREEN_WIDTH, SCREEN_HEIGHT, "Chess");
     SetTargetFPS(30);
-
     Game game = Game();
 
     //Game loop
     while (!WindowShouldClose()) {
-
         //drawing objects
         BeginDrawing();
-
         ClearBackground(WHITE);
         game.draw_game(); //draws pieces and board
-
         EndDrawing();
 
         //functionality
@@ -52,14 +51,12 @@ int main() {
             }
         }
     }
-
     //unloading textures
     UnloadTexture(game.board_texture);
     UnloadTexture(game.select_texture);
     for (auto& skin : game.skins) {
         UnloadTexture(skin.second);
     }
-
     CloseWindow();
     return 0;
 }
