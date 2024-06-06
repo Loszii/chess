@@ -17,13 +17,12 @@ FetchContent_MakeAvailable(raylib)
 
 #sources and headers defined here
 set(SOURCES 
-    src/movement.cpp
-    src/engine.cpp
-    src/game.cpp)
+    src/game.cpp
+    src/board.cpp)
 
 set(HEADERS
-    include/engine.h
-    include/game.h)
+    include/game.h
+    include/board.h)
 
 
 #to statically link
@@ -70,9 +69,7 @@ FetchContent_MakeAvailable(googletest)
 enable_testing()
 add_executable(
   testing
-  #tests/helper_test.cpp
-  #tests/movement_test.cpp
-  #tests/engine_test.cpp
+  #tests/game_test.cpp
   ${SOURCES}
   ${HEADERS}
 )

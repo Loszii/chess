@@ -2,6 +2,7 @@
 #include <unordered_map>
 #include <tuple>
 #include <vector>
+#include <array>
 #include "game.h"
 #include "raylib.h"
 
@@ -37,18 +38,32 @@ Game::Game() {
 }
 
 void Game::draw_game() {
-    DrawTexture(board_texture, 0, 0, WHITE);
+    DrawTexture(board_texture, 0, 0, WHITE); //board
     int x;
     int y;
     for (int i=0; i < 80; i += 10) {
         for (int j=0; j < 8; j++) {
-            if (board[i/10][j] != 0) {
+            if (board.data[i/10][j] != 0) {
                 int ind = i + j;
                 x = std::get<0>(coord[ind]);
                 y = std::get<1>(coord[ind]);
-                DrawTextureEx(skins[board[i/10][j]], (Vector2){(float)x, (float)y}, 0, SCALE, WHITE);
+                DrawTextureEx(skins[board.data[i/10][j]], (Vector2){(float)x, (float)y}, 0, SCALE, WHITE); //pieces
             }
         }
+    }
+
+    //shades in selected squares
+    if (select) {
+        draw_select(select_pos, Color{0, 0, 0, 150});
+        for (int i=0; i < (int)moves.size(); i++) {
+            draw_select(moves[i], Color{0, 0, 0, 150});
+        }
+    }
+
+    if (board.w_check) {
+        draw_select(board.w_king_pos, Color{255, 0, 0, 150});
+    } else if (board.b_check) {
+        draw_select(board.b_king_pos, Color{255, 0, 0, 150});
     }
 }
 
@@ -59,15 +74,37 @@ void Game::draw_select(int pos, Color color) {
     DrawTextureEx(select_texture, (Vector2){(float)x, (float)y}, 0, 1, color);
 }
 
+void Game::select_move(int pos) {
+    //takes in a position and selects either a piece or a move
+    if (select) {
+        //check if mouse was clicked on a available move
+        for (int i=0; i < (int)moves.size(); i++) {
+            if (pos == moves[i]) {
+                move_piece(select_pos, pos, board);
+                swap_turn();
+                select = false;
+                break;
+            }
+        }
+        if (select) { //if still selecting and didnt make viable move
+            check_for_selection(pos); //checks to find selection and sets moves to all moves
+        } else { //no longer selecting so we moved a piece
+            update_board();
+        }
+    } else {
+        check_for_selection(pos);
+    }
+}
+
 void Game::check_for_selection(int pos) {
     //checks if there is a piece to select at given pos, if so sets select to true, select_pos to pos, sets moves to all moves of that piece
     int i = pos/10;
     int j = pos % 10;
-    if ((w_turn && board[i][j] > 0) || (!w_turn && board[i][j] < 0)) { //pos num 0-100 representing 2d array indices
+    if ((board.w_turn && board.data[i][j] > 0) || (!board.w_turn && board.data[i][j] < 0)) { //pos num 0-100 representing 2d array indices
         //below code runs if there is a move to select
         select = true;
         select_pos = pos;
-        moves = get_legal_moves(pos); //gets possible moves
+        moves = get_legal_moves(pos, board); //gets possible moves
     } else {
         select = false;
     }
@@ -86,185 +123,345 @@ int Game::get_index(int x, int y) {
     }
 }
 
-//make this just return the king of whose turn it is
-std::vector<int> Game::get_king_coord() {
-    //returns array of two integer, first one being whites king second one will be blacks, ints are pos of form i*10 + j
-    int white = 0;
-    int black = 0;
-    for (int i=0; i < 80; i+=10) { //iterate over entire board
-        for (int j=0; j < 8; j++) {
-            if (board[i/10][j] == 6) {
-                white = i+j;
-            } else if (board[i/10][j] == -6) {
-                black = i+j;
-            }
-        }
+void Game::swap_turn() {
+    if (board.w_turn) {
+        board.w_turn = false;
+    } else {
+        board.w_turn = true;
     }
-    std::vector<int> kings = {white, black};
-    return kings;
 }
 
-//make this check_check() and just sets if whoevers turn it is is in check
-bool Game::in_check() {
-    //given a board and a turn, if w_turn is true check is white is in check
-    std::vector<int> king_positions = get_king_coord();
-    std::vector<int> all_trajectories = get_all_trajectories();
-    int king_pos;
-    if (w_turn) {
-        king_pos = king_positions[0];
+void Game::update_board() {
+    std::vector<int> enemy_moves = get_enemy_moves(board.data, board.w_turn);
+    if (board.w_turn) { //updating before white moves
+        board.b_check = false;
+        board.w_king_pos = get_piece_pos(6);
+        board.w_check = under_attack(board.w_king_pos, enemy_moves);
     } else {
-        king_pos = king_positions[1];
+        board.w_check = false;
+        board.b_king_pos = get_piece_pos(-6);
+        board.b_check = under_attack(board.b_king_pos, enemy_moves);
     }
-    for (int j=0; j < (int)all_trajectories.size(); j++) {
-        if (all_trajectories[j] == king_pos) { //in check
+}
+
+bool Game::under_attack(int pos, std::vector<int> enemy_moves) {
+    //returns true if position is in enemy moves array
+    for (int i=0; i < (int)enemy_moves.size(); i++) {
+        if (enemy_moves[i] == pos) {
             return true;
         }
     }
     return false;
 }
 
-void Game::check_castle_conditions() {
-    //given a board and array of castling conditions, changes them dependant upon all_trajectories, here all_trajectories is the enemy pieces moves
-    //for castling: have 4 variables, in array [r_temp, r_perm, l_temp, l_perm] for each side, here we are given the side whose turn it is
-    bool* castle;
-    if (w_turn) {
-        castle = w_castle;
-    } else {
-        castle = b_castle;
-    }
-
-    bool disable_castle[4] = {false}; //a castle of opponent cannot impact other castle opportunity
-    int disable_en_passant = -1; //an en passant cannot interfere with castling
-    std::vector<int> all_trajectories = get_all_trajectories();
-
-    //white
-    //perms
-    int row;
-    int side;
-    if (w_turn) {
-        side = 1;
-        row = 7;
-    } else {
-        side = -1;
-        row = 0;
-    }
-    if (board[row][4] != side * 6) { //king moved, all perm become false, dont undo these
-        castle[1] = false;
-        castle[3] = false;
-    }
-    if (board[row][7] != side * 4) { //right rook
-        castle[1] = false;
-    }
-    if (board[row][0] != side * 4) { //left rook
-        castle[3] = false;
-    }
-
-    //temps
-    castle[0] = true;
-    castle[2] = true;
-
-    if (board[row][5] != 0 || board[row][6] != 0) { //piece in the way
-        castle[0] = false;
-    }
-    if (board[row][1] != 0 || board[row][2] != 0 || board[row][3] != 0) {
-        castle[2] = false;
-    }
-
-    if (castle[0] || castle[2]) { //if both are not already both false
-        for (int i=0; i < (int)all_trajectories.size(); i++) { //iterate through all moves to see if a piece can attack square
-                if (all_trajectories[i] == (10*row) + 4) {
-                    castle[0] = false;
-                    castle[2] = false;
-                    break;
-                }
-                if (all_trajectories[i] == (10*row) + 5 || all_trajectories[i] == (10*row) + 6) {
-                    castle[0] = false;
-                } else if (all_trajectories[i] == (10*row) + 2 || all_trajectories[i] == (10*row) + 3) {
-                    castle[2] = false;
-                }
-        }
-    }
-}
-
-void Game::check_game_state() {
-    //checks if there is a checkmate/stalemate for whoevers turn it is
-    bool disable_castle[4] = {false};
-    int scale;
-    if (w_turn) {
-        scale = -1;
-    } else {
-        scale = 1;
-    }
-    //cannot disable en_passant as it can be the only move left
-    //dont need to know if can castle since if can castle then game_over can't be true (space to move and not in checks)
-    std::vector<std::vector<int>> all_legal_moves = get_all_legal_moves();
-    if ((w_turn && ((int)all_legal_moves.size() == 0 && w_check)) || (!w_turn && ((int)all_legal_moves.size() == 0 && b_check))) {
-        game_over = scale * 2; //checkmate
-    } else if ((int)all_legal_moves.size() == 0) {
-        game_over = scale * 1; //stalemate
-    }
-}
-
-void Game::check_en_passant() {
-    //return -1 if no en passant, if there is this function returns the position of square enemy pawn can take
-    //of form i*10 + j
-    int start_pos = past_moves[0];
-    int end_pos = past_moves[1];
-    //check if start is a pawn, then check if it is moving two sqaures. if so then return the first one in its direction
-    int diff;
-    if (board[end_pos/10][end_pos%10] == 1) {
-        //white pawn
-        diff = end_pos - start_pos;
-        if (diff == -20) {
-            en_passant = start_pos - 10;
-        }
-    } else if (board[end_pos/10][end_pos%10] == -1) {
-        diff = end_pos - start_pos;
-        if (diff == 20) {
-            en_passant = start_pos + 10;
-        }
-    } else {
-        en_passant = -1;
-    }
-}
-
-void Game::check_pawn_promotion() {
-    //given a board, promotes a pawn to a queen automatically if it make it to the end of board
-    //return pos of promotion or -1 if none
+int Game::get_piece_pos(int piece) {
+    //returns first occurance of piece within the current board, -1 if none
     for (int i=0; i < 8; i++) {
-        if (board[0][i] == 1) {
-            board[0][i] = 5;
-            promotion_pos =  i;
-            return;
-        }
-        if (board[7][i] == -1) {
-            board[7][i] = -5;
-            promotion_pos = 70+i;
-            return;
+        for (int j=0; j < 8; j++) {
+            if (board.data[i][j] == piece) {
+                return i*10 + j;
+            }
         }
     }
-    promotion_pos = -1;
+    return -1;
+};
+
+int Game::move_piece(int start_pos, int end_pos, Board& board) {
+    //given a start pos and end pos, moves piece in current board from start to end. returns piece taken
+    int piece = board.data[end_pos/10][end_pos%10];
+    board.data[end_pos/10][end_pos%10] = board.data[start_pos/10][start_pos%10];
+    board.data[start_pos/10][start_pos%10] = 0;
+    return piece;
 }
 
-void Game::updater() {
-    //code to run after moving piece, updates king pos, checks, castling, en passant, and promotion
-    //if called with w_turn = true then will check these conditions for white before they can move
-    
-    //check for pawn promotion before below since can affect check/castle
-    check_en_passant();
-    check_pawn_promotion();
-    check_castle_conditions();
-    //checks
-    std::vector<int> king_coord = get_king_coord();
-    w_king_pos = king_coord[0];
-    b_king_pos = king_coord[1];
-    if (w_turn) {
-        w_check = in_check();
-        b_check = false; //black just moved so must be false
+void Game::undo_move_piece(int start_pos, int end_pos, int captured_piece, Board& board) {
+    board.data[start_pos/10][start_pos%10] = board.data[end_pos/10][end_pos%10];
+    board.data[end_pos/10][end_pos%10] = captured_piece;
+}
+
+void Game::get_pawn_moves(int i, int j, std::array<std::array<int, 8>, 8>& data, std::vector<int>& result) {
+    bool w_turn; //must have local turn since we can be checking enemy pawn moves
+    int u_bound;
+    int dir;
+    int start_row;
+    if (board.data[i][j] > 0) {
+        w_turn = true;
+        u_bound = 0;
+        dir = -1;
+        start_row = 6;
     } else {
-        w_check = false;
-        b_check = in_check();
+        w_turn = false;
+        u_bound = 7;
+        dir = 1;
+        start_row = 1;
     }
-    //checkmate or stalemate
-    check_game_state();
+
+    if (i == start_row && board.data[i+dir][j] == 0 && board.data[i+(2*dir)][j] == 0) {//straight
+        result.push_back(((i+dir)*10)+j);
+        result.push_back(((i+(2*dir))*10)+j);
+    } else if (i != u_bound && board.data[i+dir][j] == 0) {
+        result.push_back(((i+dir)*10)+j);
+    }
+    if (i != u_bound) { //diags
+        if (j > 0) {
+            if (w_turn && board.data[i+dir][j-1] < 0) {
+                result.push_back((i+dir)*10 + (j-1));
+            } else if (!w_turn && board.data[i+dir][j-1] > 0) {
+                result.push_back((i+dir)*10 + (j-1));
+            }
+        }
+        if (j < 7) {
+            if (w_turn && board.data[i+dir][j+1] < 0) {
+                result.push_back((i+dir)*10 + (j+1));
+            } else if (!w_turn && board.data[i+dir][j+1] > 0) {
+                result.push_back((i+dir)*10 + (j+1));
+            }
+        }
+    }
+}
+
+void Game::get_bishop_moves(int i, int j, std::array<std::array<int, 8>, 8>& data, std::vector<int>& result) {
+    bool w_turn;
+    if (data[i][j] > 0) {
+        w_turn = true;
+    } else {
+        w_turn = false;
+    }
+    for (int k=1; k < j+1; k++) { //upper left
+        if (i-k < 0) {
+            break;
+        }
+        if (data[i-k][j-k] == 0) {
+            result.push_back((i-k)*10 + (j-k));
+        } else if ((w_turn && data[i-k][j-k] < 0) || (!w_turn && data[i-k][j-k] > 0)) { //piece there so break after
+            result.push_back((i-k)*10 + (j-k));
+            break;
+        } else {
+            break; //hit own piece so break
+        }
+    }
+    for (int k=1; k < j+1; k++) { //lower left
+        if (i+k > 7) {
+            break;
+        }
+        if (data[i+k][j-k] == 0) {
+            result.push_back((i+k)*10 + (j-k));
+        } else if ((w_turn && data[i+k][j-k] < 0) || (!w_turn && data[i+k][j-k] > 0)) { 
+            result.push_back((i+k)*10 + (j-k));
+            break;
+        } else {
+            break;
+        }
+    }
+    for (int k=1; k < (7-j)+1; k++) { //upper right
+        if (i-k < 0) { //off screen
+            break;
+        }
+        if (data[i-k][j+k] == 0) {
+            result.push_back((i-k)*10 + (j+k));
+        } else if ((w_turn && data[i-k][j+k] < 0) || (!w_turn && data[i-k][j+k] > 0)) { 
+            result.push_back((i-k)*10 + (j+k));
+            break;
+        } else {
+            break;
+        }
+    }
+    for (int k=1; k < (7-j)+1; k++) { //lower right
+        if (i+k > 7) { //off screen
+            break;
+        }
+        if (data[i+k][j+k] == 0) {
+            result.push_back((i+k)*10 + (j+k));
+        } else if ((w_turn && data[i+k][j+k] < 0) || (!w_turn && data[i+k][j+k] > 0)) { 
+            result.push_back((i+k)*10 + (j+k));
+            break;
+        } else {
+            break;
+        }
+    }
+}
+
+void Game::get_knight_moves(int i, int j, std::array<std::array<int, 8>, 8>& data, std::vector<int>& result) {
+    bool w_turn;
+    if (data[i][j] > 0) {
+        w_turn = true;
+    } else {
+        w_turn = false;
+    }
+    if (i > 1) {//top 2
+        if (j > 0 && ((w_turn && data[i-2][j-1] <= 0) || (!w_turn && data[i-2][j-1] >= 0))) {
+            result.push_back((i-2)*10 + (j-1));
+        }
+        if (j < 7 && ((w_turn && data[i-2][j+1] <= 0) || (!w_turn && data[i-2][j+1] >= 0))) {
+            result.push_back((i-2)*10 + (j+1));
+        }
+    }
+    if (j < 6) {//right 2
+        if (i > 0 && ((w_turn && data[i-1][j+2] <= 0) || (!w_turn && data[i-1][j+2] >= 0))) {
+            result.push_back((i-1)*10 + (j+2));
+        }
+        if (i < 7 && ((w_turn && data[i+1][j+2] <= 0) || (!w_turn &&  data[i+1][j+2] >= 0))) {
+            result.push_back((i+1)*10 + (j+2));
+        }
+    }
+    if (i < 6) {//bottom 2
+        if (j > 0 && ((w_turn && data[i+2][j-1] <= 0) || (!w_turn &&  data[i+2][j-1] >= 0))) {
+            result.push_back((i+2)*10 + (j-1));
+        }
+        if (j < 7 && ((w_turn && data[i+2][j+1] <= 0) || (!w_turn &&  data[i+2][j+1] >= 0))) {
+            result.push_back((i+2)*10 + (j+1));
+        }
+    }
+    if (j > 1) {//left 2
+        if (i > 0 && ((w_turn && data[i-1][j-2] <= 0) || (!w_turn &&  data[i-1][j-2] >= 0))) {
+            result.push_back((i-1)*10 + (j-2));
+        }
+        if (i < 7 && ((w_turn && data[i+1][j-2] <= 0) || (!w_turn &&  data[i+1][j-2] >= 0))) {
+            result.push_back((i+1)*10 + (j-2));
+        }
+    }
+}
+
+void Game::get_rook_moves(int i, int j, std::array<std::array<int, 8>, 8>& data, std::vector<int>& result) {
+    bool w_turn;
+    if (data[i][j] > 0) {
+        w_turn = true;
+    } else {
+        w_turn = false;
+    }
+    for (int k=1; k < i+1; k++) { //top col
+        if (data[i-k][j] == 0) {
+            result.push_back((i-k)*10 + j);
+        } else if ((w_turn && data[i-k][j] < 0) || (!w_turn && data[i-k][j] > 0)) {
+            result.push_back((i-k)*10 + j);
+            break;
+        } else {
+            break;
+        }
+    }
+    for (int k=1; k < (7-j)+1; k++) { //right col
+        if (data[i][j+k] == 0) {
+            result.push_back(i*10 + (j+k));
+        } else if ((w_turn && data[i][j+k] < 0) || (!w_turn && data[i][j+k] > 0)) {
+            result.push_back(i*10 + (j+k));
+            break;
+        } else {
+            break;
+        }
+    }
+    for (int k=1; k < (7-i)+1; k++) { //bottom col
+        if (data[i+k][j] == 0) {
+            result.push_back((i+k)*10 + j);
+        } else if ((w_turn && data[i+k][j] < 0) || (!w_turn && data[i+k][j] > 0)) {
+            result.push_back((i+k)*10 + j);
+            break;
+        } else {
+            break;
+        }
+    }
+    for (int k=1; k < j+1; k++) { //left col
+        if (data[i][j-k] == 0) {
+            result.push_back(i*10 + (j-k));
+        } else if ((w_turn && data[i][j-k] < 0) || (!w_turn && data[i][j-k] > 0)) {
+            result.push_back(i*10 + (j-k));
+            break;
+        } else {
+            break;
+        }
+    }
+}
+
+void Game::get_king_moves(int i, int j, std::array<std::array<int, 8>, 8>& data, std::vector<int>& result) {
+    bool w_turn;
+    if (data[i][j] > 0) {
+        w_turn = true;
+    } else {
+        w_turn = false;
+    }
+    if (i != 0) {//top row
+        for (int k=-1; k < 2; k++) { //move left to right
+            if (j+k >= 0 && j+k <= 7 && ((w_turn && data[i-1][j+k] <= 0) || (!w_turn && data[i-1][j+k] >= 0))) {
+                result.push_back((i-1)*10 + (j+k));
+            }
+        }
+    }
+    if (i != 7) {//bottom row
+        for (int k=-1; k < 2; k++) { 
+            if (j+k >= 0 && j+k <= 7 && ((w_turn && data[i+1][j+k] <= 0) || (!w_turn && data[i+1][j+k] >= 0))) {
+                result.push_back((i+1)*10 + (j+k));
+            }
+        }
+    }
+    if (j < 7 && ((w_turn && data[i][j+1] <= 0) || (!w_turn && data[i][j+1] >= 0))) {//right square
+        result.push_back(i*10 + (j+1));
+    }
+    if (j > 0 && ((w_turn && data[i][j-1] <= 0) || (!w_turn && data[i][j-1] >= 0))) {//left square
+        result.push_back(i*10 + (j-1));
+    }
+}
+
+std::vector<int> Game::get_trajectory(int pos, std::array<std::array<int, 8>, 8>& data) {
+    //given a board and square return all possible indices to move, legal or not
+    //pos is a index of form i*10 + j
+    //indices will be returned in same form
+
+    std::vector<int> result;
+    int i = pos / 10;
+    int j = pos % 10;
+    int piece = data[i][j];
+
+    if (piece == 1 || piece == -1) {
+        get_pawn_moves(i, j, data, result);
+    } else if (piece == 2 || piece == -2) {
+        get_bishop_moves(i, j, data, result);
+    } else if (piece == 3 || piece == -3) {
+        get_knight_moves(i, j, data, result);
+    } else if (piece == 4 || piece == -4) {
+        get_rook_moves(i, j, data, result);
+    } else if (piece == 5 || piece == -5) {
+        get_bishop_moves(i, j, data, result);
+        get_rook_moves(i, j, data, result);
+    } else if (piece == 6 || piece == -6) {
+        get_king_moves(i, j, data, result);
+    }
+
+    return result;
+}
+
+std::vector<int> Game::get_enemy_moves(std::array<std::array<int, 8>, 8>& data, bool w_turn) {
+    //returns all trajectories of the opposite color
+    std::vector<int> result;
+    for (int i=0; i < 80; i+=10) { //iterate over entire board
+        for (int j=0; j < 8; j++) {
+            if ((w_turn && data[i/10][j] < 0) || (!w_turn && data[i/10][j] > 0)) { //determines black or white side
+                std::vector<int> trajectory = get_trajectory(i+j, data); //get all piece
+                for (int k=0; k < (int)trajectory.size(); k++) {
+                    result.push_back(trajectory[k]); //add to final array
+                }
+            }
+        }
+    }
+    return result;
+}
+
+std::vector<int> Game::get_legal_moves(int pos, Board& board) {
+    //uses board in parameter
+    std::vector<int> result;
+    std::vector<int> all_moves = get_trajectory(pos, board.data);
+    int temp;
+    int king;
+    if (board.w_turn) {
+        king = 6;
+    } else {
+        king = -6;
+    }
+    for (int i=0; i < (int)all_moves.size(); i++) {
+        temp = move_piece(pos, all_moves[i], board);
+        std::vector<int> enemy_moves = get_enemy_moves(board.data, board.w_turn);
+        if (!under_attack(get_piece_pos(king), enemy_moves)) {
+            result.push_back(all_moves[i]);
+        }
+        undo_move_piece(pos, all_moves[i], temp, board);
+    }
+    return result;
 }
