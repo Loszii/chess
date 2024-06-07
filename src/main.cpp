@@ -10,11 +10,14 @@
 //idea: have update_board push_back all old values into array, make new undo_update that takes in this array and resets them all.
 //can use this function in perft, minimax and legal moves <--- work on these funcs
 
-//add the different draw scenarios and game over
-
-//idea: remove Board parameter and just work on current board object (will need some tweaking)
-
 //all positions in this program are of form i*10 + j
+
+//TO DO TOMORROW:
+//have update_board return an array of all the old values. then make a undo_update_board(old_vals[]) function that resets them,
+//after this we can make the check_something() functions no longer return their old values
+//anywhere we called moves and undo moves we will call the above 2
+
+//implement minimax inside of game.cpp (not in its own file)
 
 const int SCREEN_WIDTH = 784;
 const int SCREEN_HEIGHT = 784;

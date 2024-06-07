@@ -14,7 +14,10 @@ TEST(Game, Perft) {
     //function call example:
 
     //make_move()
-    //update things and store their old value
+    //update_board()
+
+    //do something
+
     //undo_move()
-    //set attributes back
+    //undo_update_board()
 }
