@@ -13,9 +13,13 @@
 //all positions in this program are of form i*10 + j
 
 //TO DO TOMORROW:
-//have update_board return an array of all the old values. then make a undo_update_board(old_vals[]) function that resets them,
-//after this we can make the check_something() functions no longer return their old values
-//anywhere we called moves and undo moves we will call the above 2
+
+//for promotion, make end_pos a number like 204, which represented a promotion to a bishop at pos 04. this way can undo move just given the positions.
+//will need to change the way we select moves
+
+//if a move with end_pos > 100 is in moves list, open a pawn promotion menu that allows user to pick
+//must mod all positions by 100 to properly get their position on the board
+
 
 //implement minimax inside of game.cpp (not in its own file)
 

@@ -69,7 +69,7 @@ FetchContent_MakeAvailable(googletest)
 enable_testing()
 add_executable(
   testing
-  #tests/game_test.cpp
+  tests/game_test.cpp
   ${SOURCES}
   ${HEADERS}
 )

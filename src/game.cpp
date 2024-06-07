@@ -37,6 +37,39 @@ Game::Game() {
     }
 }
 
+Game::Game(bool textures) {
+    if (textures) {
+        board_texture = LoadTexture("../res/board.png");
+        select_texture = LoadTexture("../res/selector.png");
+
+        //skins
+        skins[1] = LoadTexture("../res/w-pawn.png");
+        skins[2] = LoadTexture("../res/w-bishop.png");
+        skins[3] = LoadTexture("../res/w-knight.png");
+        skins[4] = LoadTexture("../res/w-rook.png");
+        skins[5] = LoadTexture("../res/w-queen.png");
+        skins[6] = LoadTexture("../res/w-king.png");
+        skins[-1] = LoadTexture("../res/b-pawn.png");
+        skins[-2] = LoadTexture("../res/b-bishop.png");
+        skins[-3] = LoadTexture("../res/b-knight.png");
+        skins[-4] = LoadTexture("../res/b-rook.png");
+        skins[-5] = LoadTexture("../res/b-queen.png");
+        skins[-6] = LoadTexture("../res/b-king.png");
+    }
+
+    //coord
+    int x;
+    int y;
+    for (int i=0; i < 80; i += 10) {
+        x = BEVEL;
+        y = BEVEL + ((i/10) * SQUARE_WIDTH);
+        for (int j=0; j < 8; j++) {
+            coord[i+j] = std::make_tuple(x, y);
+            x += SQUARE_WIDTH;
+        }
+    }
+}
+
 void Game::draw_game() {
     DrawTexture(board_texture, 0, 0, WHITE); //board
     int x;
@@ -94,7 +127,6 @@ void Game::select_move(int pos) {
         for (int i=0; i < (int)moves.size(); i++) {
             if (pos == moves[i]) {
                 select = false;
-                move_piece(select_pos, pos);
                 update_board(select_pos, pos);
                 check_game_over();
                 break;
@@ -143,12 +175,18 @@ void Game::swap_turn() {
     }
 }
 
-void Game::update_board(int start_pos, int end_pos) {
-    //updates board attributes, first swaps the turn and then checks conditions before player moves
+Board Game::update_board(int start_pos, int end_pos) {
+    //moves piece given params, then updates board attributes, first swaps the turn and then checks conditions before player moves
+    //returns old board
+    Board old_board = Board(board.data, board.w_turn, board.w_king_pos, board.b_king_pos, board.w_check, board.b_check, board.w_castle,
+    board.b_castle, board.en_passant, board.promotion_pos);
+
+    move_piece(start_pos, end_pos);
     swap_turn();
+
     promote_pawns();
     check_en_passant(start_pos, end_pos);
-    std::vector<int> enemy_moves = get_enemy_moves();
+    std::vector<int> enemy_moves = get_all_trajectories(!board.w_turn);
     if (board.w_turn) { //updating before white moves
         board.b_check = false;
         board.w_king_pos = get_piece_pos(6);
@@ -158,7 +196,12 @@ void Game::update_board(int start_pos, int end_pos) {
         board.b_king_pos = get_piece_pos(-6);
         board.b_check = under_attack(board.b_king_pos, enemy_moves);
     }
-    check_castle();
+    check_castle(enemy_moves);
+    return old_board;
+}
+
+void Game::undo_update_board(Board old_board) {
+    board = old_board;
 }
 
 bool Game::under_attack(int pos, std::vector<int> enemy_moves) {
@@ -613,12 +656,28 @@ std::vector<int> Game::get_trajectory(int pos) {
     return result;
 }
 
-std::vector<int> Game::get_enemy_moves() {
-    //returns all trajectories of the opposite turns pieces (w_turn true returns all blacks options)
+std::vector<int> Game::get_all_trajectories() {
+    //returns all trajectories of the players to move pieces
     std::vector<int> result;
     for (int i=0; i < 80; i+=10) { //iterate over entire board
         for (int j=0; j < 8; j++) {
-            if ((board.w_turn && board.data[i/10][j] < 0) || (!board.w_turn && board.data[i/10][j] > 0)) { //determines black or white side
+            if ((board.w_turn && board.data[i/10][j] > 0) || (!board.w_turn && board.data[i/10][j] < 0)) { //determines black or white side
+                std::vector<int> trajectory = get_trajectory(i+j); //get all piece
+                for (int k=0; k < (int)trajectory.size(); k++) {
+                    result.push_back(trajectory[k]); //add to final array
+                }
+            }
+        }
+    }
+    return result;
+}
+
+std::vector<int> Game::get_all_trajectories(bool w_turn) {
+    //returns all trajectories the specified player
+    std::vector<int> result;
+    for (int i=0; i < 80; i+=10) { //iterate over entire board
+        for (int j=0; j < 8; j++) {
+            if ((w_turn && board.data[i/10][j] > 0) || (!w_turn && board.data[i/10][j] < 0)) { //determines black or white side
                 std::vector<int> trajectory = get_trajectory(i+j); //get all piece
                 for (int k=0; k < (int)trajectory.size(); k++) {
                     result.push_back(trajectory[k]); //add to final array
@@ -642,19 +701,13 @@ std::vector<int> Game::get_legal_moves(int pos) {
         king = -6;
     }
     for (int i=0; i < (int)all_moves.size(); i++) {
-        captured_piece = move_piece(pos, all_moves[i]);
-        //disble en passant and promotion since not concerned with them
-        int old_en_passant = board.en_passant;
-        int old_promotion_pos = board.promotion_pos;
-        board.en_passant = -1;
-        board.promotion_pos = -1;
-        std::vector<int> enemy_moves = get_enemy_moves();
+        //CHANGE BELOW CODE:
+        Board old_board = update_board(pos, all_moves[i]);
+        std::vector<int> enemy_moves = get_all_trajectories();
         if (!under_attack(get_piece_pos(king), enemy_moves)) {
             result.push_back(all_moves[i]);
         }
-        undo_move_piece(pos, all_moves[i], captured_piece);
-        board.en_passant = old_en_passant;
-        board.promotion_pos = old_promotion_pos;
+        undo_update_board(old_board);
     }
     return result;
 }
@@ -681,16 +734,12 @@ std::vector<std::vector<int>> Game::get_all_legal_moves() {
     return result;
 }
 
-std::array<bool, 4> Game::check_castle() {
+void Game::check_castle(std::vector<int> enemy_moves) {
     //updates castle array for player to move, returns old array
-    std::vector<int> enemy_moves = get_enemy_moves();
     std::array<bool, 4>* castle;
-    std::array<bool, 4> old_array;
     if (board.w_turn) {
-        old_array = board.w_castle;
         castle = &board.w_castle;
     } else {
-        old_array = board.b_castle;
         castle = &board.b_castle;
     }
     //white
@@ -740,14 +789,11 @@ std::array<bool, 4> Game::check_castle() {
                 }
         }
     }
-
-    return old_array;
 }
 
-int Game::check_en_passant(int start_pos, int end_pos) {
+void Game::check_en_passant(int start_pos, int end_pos) {
     //checks for a pawn developing a en passant square.
     //sets en_passant in board and returns old value for undoing
-    int old_val = board.en_passant;
 
     int diff;
     if (board.data[end_pos/10][end_pos%10] == 1) {
@@ -755,34 +801,34 @@ int Game::check_en_passant(int start_pos, int end_pos) {
         diff = end_pos - start_pos;
         if (diff == -20) {
             board.en_passant = start_pos - 10;
+        } else {
+            board.en_passant = -1;
         }
     } else if (board.data[end_pos/10][end_pos%10] == -1) {
         diff = end_pos - start_pos;
         if (diff == 20) {
             board.en_passant = start_pos + 10;
+        } else {
+            board.en_passant = -1;
         }
-    }
-    if (board.en_passant == old_val) {//cant be same square twice so no en_passant
+    } else {
         board.en_passant = -1;
     }
-    return old_val;
 }
 
-int Game::promote_pawns() {
+void Game::promote_pawns() {
     //promotes any pawns and sets promotion_pos in Board, returns the old promotion position
-    int old_pos = board.promotion_pos;
     for (int i=0; i < 8; i++) {
         if (board.data[0][i] == 1) {
             board.data[0][i] = 5;
             board.promotion_pos = i;
-            return old_pos;
+            return;
         }
         if (board.data[7][i] == -1) {
             board.data[7][i] = -5;
             board.promotion_pos = 70+i;
-            return old_pos;
+            return;
         }
     }
     board.promotion_pos = -1;//nothing was promoted
-    return old_pos;
 }

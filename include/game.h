@@ -23,12 +23,14 @@ class Game {
 
         //constructor
         Game();
+        Game(bool textures);
         //drawing
         void draw_game();
         //functionality
         void select_move(int pos);
         int get_index(int x, int y);
-        void update_board(int start_pos, int end_pos);
+        Board update_board(int start_pos, int end_pos);
+        void undo_update_board(Board old_board);
         //movement
         int move_piece(int start_pos, int end_pos);
         void undo_move_piece(int start_pos, int end_pos, int captured_piece);
@@ -52,9 +54,9 @@ class Game {
         int get_piece_pos(int piece);
         void check_game_over();
         //movement
-        std::array<bool, 4> check_castle();
-        int check_en_passant(int start_pos, int end_pos);
-        int promote_pawns();
+        void check_castle(std::vector<int> enemy_moves);
+        void check_en_passant(int start_pos, int end_pos);
+        void promote_pawns();
         std::vector<int> get_pawn_moves(int i, int j);
         std::vector<int> get_bishop_moves(int i, int j);
         std::vector<int> get_knight_moves(int i, int j);
@@ -62,6 +64,7 @@ class Game {
         std::vector<int> get_queen_moves(int i, int j);
         std::vector<int> get_king_moves(int i, int j);
         std::vector<int> get_trajectory(int pos);
-        std::vector<int> get_enemy_moves();
+        std::vector<int> get_all_trajectories();
+        std::vector<int> get_all_trajectories(bool w_turn);
         std::vector<int> get_legal_moves(int pos);
 };
