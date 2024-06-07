@@ -125,6 +125,10 @@ void Game::select_move(int pos) {
     if (select) {
         //check if mouse was clicked on a available move
         for (int i=0; i < (int)moves.size(); i++) {
+
+            //if moves[i] >= 100, show moves[i] % 100 on board and show promotion menu
+
+
             if (pos == moves[i]) {
                 select = false;
                 update_board(select_pos, pos);
@@ -179,13 +183,11 @@ Board Game::update_board(int start_pos, int end_pos) {
     //moves piece given params, then updates board attributes, first swaps the turn and then checks conditions before player moves
     //returns old board
     Board old_board = Board(board.data, board.w_turn, board.w_king_pos, board.b_king_pos, board.w_check, board.b_check, board.w_castle,
-    board.b_castle, board.en_passant, board.promotion_pos);
+    board.b_castle, board.en_passant);
 
     move_piece(start_pos, end_pos);
     swap_turn();
 
-    promote_pawns();
-    check_en_passant(start_pos, end_pos);
     std::vector<int> enemy_moves = get_all_trajectories(!board.w_turn);
     if (board.w_turn) { //updating before white moves
         board.b_check = false;
@@ -197,6 +199,7 @@ Board Game::update_board(int start_pos, int end_pos) {
         board.b_check = under_attack(board.b_king_pos, enemy_moves);
     }
     check_castle(enemy_moves);
+    check_en_passant(start_pos, end_pos);
     return old_board;
 }
 
@@ -207,7 +210,7 @@ void Game::undo_update_board(Board old_board) {
 bool Game::under_attack(int pos, std::vector<int> enemy_moves) {
     //returns true if position is in enemy moves array
     for (int i=0; i < (int)enemy_moves.size(); i++) {
-        if (enemy_moves[i] == pos) {
+        if (enemy_moves[i]%100 == pos) { //mod 100 to ignore promotion code
             return true;
         }
     }
@@ -243,11 +246,23 @@ void Game::check_game_over() {
     }
 }
 
-int Game::move_piece(int start_pos, int end_pos) {
-    //given a start pos and end pos, moves piece at start to end
-    //returns the piece that was captured if any
+void Game::move_piece(int start_pos, int end_pos) {
+    //given a start pos and end pos, moves piece at start to end position
+    //this function handles en passant, castling, and promotions
     int i = start_pos/10;
     int j = start_pos%10;
+
+    if (end_pos >= 100) { //promotion
+        board.data[start_pos/10][start_pos%10] = 0;
+        int chopped_pos = end_pos % 100;
+        int new_piece = end_pos / 100;
+        if (!board.w_turn) {
+            new_piece *= -1;
+        }
+        board.data[chopped_pos/10][chopped_pos%10] = new_piece;
+        return;
+    }
+
     //for castling:
     int row;
     int side;
@@ -303,66 +318,20 @@ int Game::move_piece(int start_pos, int end_pos) {
     }
 
     //actually move piece
-    int captured_piece = board.data[end_pos/10][end_pos%10];
     board.data[end_pos/10][end_pos%10] = board.data[start_pos/10][start_pos%10];
     board.data[start_pos/10][start_pos%10] = 0;
-    return captured_piece;
-}
-
-void Game::undo_move_piece(int start_pos, int end_pos, int captured_piece) {
-    //undoes what the move_piece function changes
-    //promotion
-    if (board.promotion_pos == end_pos) {
-        if (board.data[end_pos/10][end_pos%10] > 0) {
-            board.data[start_pos/10][start_pos%10] = 1;
-            board.data[end_pos/10][end_pos%10] = captured_piece;
-            return;
-        } else {
-            board.data[start_pos/10][start_pos%10] = -1;
-            board.data[end_pos/10][end_pos%10] = captured_piece;
-            return;
-        }
-    }
-    //en passant or castle
-    if (captured_piece == 0) {
-        if (board.data[end_pos/10][end_pos%10] == 1) { //is pawn that moved
-            if (end_pos == start_pos - 9 || end_pos == start_pos - 11) { //diagonal
-                int pawn_pos = end_pos + 10;
-                board.data[pawn_pos/10][pawn_pos%10] = -1;
-            }
-        } else if (board.data[end_pos/10][end_pos%10] == -1) {
-            if (end_pos == start_pos + 11 || end_pos == start_pos + 9) { //diagonal
-                int pawn_pos = end_pos - 10;
-                board.data[pawn_pos/10][pawn_pos%10] = 1;
-            }
-        }
-        //castle
-        if (board.data[end_pos/10][end_pos%10] == 6 || board.data[end_pos/10][end_pos%10] == -6) {
-            if (end_pos - start_pos == 2) { //castled right
-                int rook_pos = end_pos - 1;
-                int rook_dest = end_pos + 1;
-                board.data[rook_dest/10][rook_dest%10] = board.data[rook_pos/10][rook_pos%10];
-                board.data[rook_pos/10][rook_pos%10] = 0;
-            } else if (end_pos - start_pos == -2) { //castled left
-                int rook_pos = end_pos + 1;
-                int rook_dest = end_pos - 2;
-                board.data[rook_dest/10][rook_dest%10] = board.data[rook_pos/10][rook_pos%10];
-                board.data[rook_pos/10][rook_pos%10] = 0;
-            }
-        }
-    }
-
-    //undoing actual move
-    board.data[start_pos/10][start_pos%10] = board.data[end_pos/10][end_pos%10];
-    board.data[end_pos/10][end_pos%10] = captured_piece;
 }
 
 std::vector<int> Game::get_pawn_moves(int i, int j) {
+
+    //to do, if can promote append 2pos, 3pos, 4pos, 5pos for all different pieces that can promote too
+
     std::vector<int> result;
     bool w_turn; //must have local turn since we can be checking enemy pawn moves
     int u_bound;
     int dir;
     int start_row;
+    int side;
     if (board.data[i][j] > 0) {
         w_turn = true;
         u_bound = 0;
@@ -375,37 +344,60 @@ std::vector<int> Game::get_pawn_moves(int i, int j) {
         start_row = 1;
     }
 
+    //promotion checks
+    bool will_promote = false;
+    if ((w_turn && i == 1) || (!w_turn && i == 6)) {
+        will_promote = true;
+    }
+
+    //for below if it will promote we add all the possible promotion pieces in the hundreds place
     if (i == start_row && board.data[i+dir][j] == 0 && board.data[i+(2*dir)][j] == 0) {//straight
         result.push_back(((i+dir)*10)+j);
         result.push_back(((i+(2*dir))*10)+j);
     } else if (i != u_bound && board.data[i+dir][j] == 0) {
-        result.push_back(((i+dir)*10)+j);
+        if (will_promote) {
+            for (int p=200; p < 600; p += 100) {
+                result.push_back(p + ((i+dir)*10)+j);
+            }
+        } else {
+            result.push_back(((i+dir)*10)+j);
+        }
     }
     if (i != u_bound) { //diags
         if (j > 0) {
-            if (w_turn && board.data[i+dir][j-1] < 0) {
-                result.push_back((i+dir)*10 + (j-1));
-            } else if (!w_turn && board.data[i+dir][j-1] > 0) {
-                result.push_back((i+dir)*10 + (j-1));
-            }
-            //en passant
-            if (w_turn && ((i+dir)*10 + (j-1) == board.en_passant) && board.en_passant/10 == 2) {
-                result.push_back((i+dir)*10 + (j-1));
-            } else if (!w_turn && ((i+dir)*10 + (j-1) == board.en_passant) && board.en_passant/10 == 5) {
-                result.push_back((i+dir)*10 + (j-1));
+            if ((w_turn && board.data[i+dir][j-1] < 0) || (!w_turn && board.data[i+dir][j-1] > 0)) {
+                if (will_promote) {
+                    for (int p=200; p < 600; p += 100) {
+                        result.push_back(p + (i+dir)*10 + (j-1));
+                    }
+                } else {
+                    result.push_back((i+dir)*10 + (j-1));
+                }
+            } else {
+                //en passant
+                if (w_turn && ((i+dir)*10 + (j-1) == board.en_passant) && board.en_passant/10 == 2) {
+                    result.push_back((i+dir)*10 + (j-1));
+                } else if (!w_turn && ((i+dir)*10 + (j-1) == board.en_passant) && board.en_passant/10 == 5) {
+                    result.push_back((i+dir)*10 + (j-1));
+                }
             }
         }
         if (j < 7) {
-            if (w_turn && board.data[i+dir][j+1] < 0) {
-                result.push_back((i+dir)*10 + (j+1));
-            } else if (!w_turn && board.data[i+dir][j+1] > 0) {
-                result.push_back((i+dir)*10 + (j+1));
-            }
-            //en passant
-            if (w_turn && ((i+dir)*10 + (j+1) == board.en_passant) && board.en_passant/10 == 2) {
-                result.push_back((i+dir)*10 + (j+1));
-            } else if (!w_turn && ((i+dir)*10 + (j+1) == board.en_passant) && board.en_passant/10 == 5) {
-                result.push_back((i+dir)*10 + (j+1));
+            if ((w_turn && board.data[i+dir][j+1] < 0) || (!w_turn && board.data[i+dir][j+1] > 0)) {
+                if (will_promote) {
+                    for (int p=200; p < 600; p += 100) {
+                        result.push_back(p + (i+dir)*10 + (j+1));
+                    }
+                } else {
+                    result.push_back((i+dir)*10 + (j+1));
+                }
+            } else {
+                //en passant
+                if (w_turn && ((i+dir)*10 + (j+1) == board.en_passant) && board.en_passant/10 == 2) {
+                    result.push_back((i+dir)*10 + (j+1));
+                } else if (!w_turn && ((i+dir)*10 + (j+1) == board.en_passant) && board.en_passant/10 == 5) {
+                    result.push_back((i+dir)*10 + (j+1));
+                }
             }
         }
     }
@@ -693,7 +685,6 @@ std::vector<int> Game::get_legal_moves(int pos) {
     //uses board in parameter
     std::vector<int> result;
     std::vector<int> all_moves = get_trajectory(pos);
-    int captured_piece;
     int king;
     if (board.w_turn) {
         king = 6;
@@ -701,7 +692,6 @@ std::vector<int> Game::get_legal_moves(int pos) {
         king = -6;
     }
     for (int i=0; i < (int)all_moves.size(); i++) {
-        //CHANGE BELOW CODE:
         Board old_board = update_board(pos, all_moves[i]);
         std::vector<int> enemy_moves = get_all_trajectories();
         if (!under_attack(get_piece_pos(king), enemy_moves)) {
@@ -775,18 +765,36 @@ void Game::check_castle(std::vector<int> enemy_moves) {
         (*castle)[2] = false;
     }
 
+    //since checking if empty square is under attack must consider pawns moving diag (wont show in enemy_moves())
+    //all spots except leftmost will stop castling
+    for (int p=1; p < 3; p++) {
+        if ((board.w_turn && board.data[row-1][p] == -1) || (!board.w_turn && board.data[row+1][p] == 1)) {
+            (*castle)[2] = false;
+        }
+    }
+    for (int p=3; p < 6; p++) {
+        if ((board.w_turn && board.data[row-1][p] == -1) || (!board.w_turn && board.data[row+1][p] == 1)) {
+            (*castle)[0] = false;
+            (*castle)[2] = false;
+        }
+    }
+    for (int p=6; p < 8; p++) {
+        if ((board.w_turn && board.data[row-1][p] == -1) || (!board.w_turn && board.data[row+1][p] == 1)) {
+            (*castle)[0] = false;
+        }
+    }
+
+
     if ((*castle)[0] || (*castle)[2]) { //if both are not already both false
-        for (int i=0; i < (int)enemy_moves.size(); i++) { //iterate through all moves to see if a piece can attack square
-                if (enemy_moves[i] == (10*row) + 4) {
-                    (*castle)[0] = false;
-                    (*castle)[2] = false;
-                    break;
-                }
-                if (enemy_moves[i] == (10*row) + 5 || enemy_moves[i] == (10*row) + 6) {
-                    (*castle)[0] = false;
-                } else if (enemy_moves[i] == (10*row) + 2 || enemy_moves[i] == (10*row) + 3) {
-                    (*castle)[2] = false;
-                }
+        if (under_attack((10*row) + 4, enemy_moves)) {
+            (*castle)[0] = false;
+            (*castle)[2] = false;
+        }
+        if (under_attack((10*row) + 5, enemy_moves) || under_attack((10*row) + 6, enemy_moves)) {
+            (*castle)[0] = false;
+        } 
+        if (under_attack((10*row) + 2, enemy_moves) || under_attack((10*row) + 3, enemy_moves)) {
+            (*castle)[2] = false;
         }
     }
 }
@@ -794,6 +802,11 @@ void Game::check_castle(std::vector<int> enemy_moves) {
 void Game::check_en_passant(int start_pos, int end_pos) {
     //checks for a pawn developing a en passant square.
     //sets en_passant in board and returns old value for undoing
+
+    if (end_pos >= 100) { //promoting pawn so cant be en passant
+        board.en_passant = -1;
+        return;
+    }
 
     int diff;
     if (board.data[end_pos/10][end_pos%10] == 1) {
@@ -814,21 +827,4 @@ void Game::check_en_passant(int start_pos, int end_pos) {
     } else {
         board.en_passant = -1;
     }
-}
-
-void Game::promote_pawns() {
-    //promotes any pawns and sets promotion_pos in Board, returns the old promotion position
-    for (int i=0; i < 8; i++) {
-        if (board.data[0][i] == 1) {
-            board.data[0][i] = 5;
-            board.promotion_pos = i;
-            return;
-        }
-        if (board.data[7][i] == -1) {
-            board.data[7][i] = -5;
-            board.promotion_pos = 70+i;
-            return;
-        }
-    }
-    board.promotion_pos = -1;//nothing was promoted
 }

@@ -7,19 +7,17 @@
 
 //to do: use two stacks with board structs to undo moves
 
-//idea: have update_board push_back all old values into array, make new undo_update that takes in this array and resets them all.
-//can use this function in perft, minimax and legal moves <--- work on these funcs
-
 //all positions in this program are of form i*10 + j
 
-//TO DO TOMORROW:
+//TO DO
 
 //for promotion, make end_pos a number like 204, which represented a promotion to a bishop at pos 04. this way can undo move just given the positions.
 //will need to change the way we select moves
-
+//add promotion positions to cord to show in center of screen on top of a menu.
 //if a move with end_pos > 100 is in moves list, open a pawn promotion menu that allows user to pick
 //must mod all positions by 100 to properly get their position on the board
 
+//pawn must block castling
 
 //implement minimax inside of game.cpp (not in its own file)
 

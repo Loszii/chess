@@ -12,8 +12,7 @@ struct Board {
     std::array<bool, 4> b_castle;
     //below -1 normally and set to position of occurance
     int en_passant;
-    int promotion_pos;
     Board();
     Board(std::array<std::array<int, 8>, 8> data, bool w_turn, int w_king_pos, int b_king_pos, bool w_check, bool b_check, std::array<bool, 4> w_castle, std::array<bool, 4> b_castle,
-    int en_passant, int promotion_pos);
+    int en_passant);
 };

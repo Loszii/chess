@@ -48,7 +48,7 @@ TEST(Game, Perft) {
                    {4, 0, 0, 0, 6, 0, 0, 4}}};
     game.board.w_castle = {true, true, true, true};
     game.board.b_castle = {true, true, true, true};
-    ASSERT_EQ(perft(game, 3), (u64)97862);
+    ASSERT_EQ(perft(game, 4), (u64)4085603);
 
     //position 3
     game.board = Board();
@@ -62,7 +62,7 @@ TEST(Game, Perft) {
                 {0, 0, 0, 0, 0, 0, 0, 0}}};
     game.board.w_castle = {false, false, false, false};
     game.board.b_castle = {false, false, false, false};
-    ASSERT_EQ(perft(game, 3), (u64)2812);
+    ASSERT_EQ(perft(game, 4), (u64)43238);
 
     //position 4
     game.board = Board();
@@ -76,7 +76,7 @@ TEST(Game, Perft) {
                 {4, 0, 0, 5, 0, 4, 6, 0}}};
     game.board.w_castle = {false, false, false, false};
     game.board.b_castle = {true, true, true, true};
-    ASSERT_EQ(perft(game, 1), (u64)6);
+    ASSERT_EQ(perft(game, 4), (u64)422333);
 
     //position 5
     game.board = Board();
@@ -90,7 +90,7 @@ TEST(Game, Perft) {
                         {4, 3, 2, 5, 6, 0, 0, 4},}};
     game.board.w_castle = {true, true, false, true};
     game.board.b_castle = {false, false, false, false};
-    //ASSERT_EQ(perft(game, 1), (u64)44);
+    ASSERT_EQ(perft(game, 4), (u64)2103487);
 
     //position 6
     game.board = Board();
@@ -104,5 +104,5 @@ TEST(Game, Perft) {
                         {4, 0, 0, 0, 0, 4, 6, 0},}};
     game.board.w_castle = {false, false, false, false};
     game.board.b_castle = {false, false, false, false};
-    ASSERT_EQ(perft(game, 3), (u64)89890);
+    ASSERT_EQ(perft(game, 4), (u64)3894594);
 }

@@ -32,8 +32,6 @@ class Game {
         Board update_board(int start_pos, int end_pos);
         void undo_update_board(Board old_board);
         //movement
-        int move_piece(int start_pos, int end_pos);
-        void undo_move_piece(int start_pos, int end_pos, int captured_piece);
         std::vector<std::vector<int>> get_all_legal_moves();
 
     private:
@@ -54,9 +52,9 @@ class Game {
         int get_piece_pos(int piece);
         void check_game_over();
         //movement
+        void move_piece(int start_pos, int end_pos);
         void check_castle(std::vector<int> enemy_moves);
         void check_en_passant(int start_pos, int end_pos);
-        void promote_pawns();
         std::vector<int> get_pawn_moves(int i, int j);
         std::vector<int> get_bishop_moves(int i, int j);
         std::vector<int> get_knight_moves(int i, int j);
