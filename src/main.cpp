@@ -5,11 +5,14 @@
 #include "raylib.h"
 #include "game.h"
 
-//to do: re-implement most features, maybe use two stacks with board structs to undo moves
-//board object will store en passant/castle/any board info
-//add unit tests once concrete on implementation
+//to do: use two stacks with board structs to undo moves
 
-//re-implement old features with old code, however use the Board object as a function call instead
+//idea: have update_board push_back all old values into array, make new undo_update that takes in this array and resets them all.
+//can use this function in perft, minimax and legal moves <--- work on these funcs
+
+//add the different draw scenarios and game over
+
+//idea: remove Board parameter and just work on current board object (will need some tweaking)
 
 //all positions in this program are of form i*10 + j
 

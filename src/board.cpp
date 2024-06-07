@@ -17,13 +17,22 @@ Board::Board() {
     b_king_pos = 4;
     w_check = false;
     b_check = false;
+    w_castle = {false, true, false, true};
+    b_castle = {false, true, false, true};
+    en_passant = -1;
+    promotion_pos = -1;
 }
 
-Board::Board(std::array<std::array<int, 8>, 8> data, bool w_turn, int w_king_pos, int b_king_pos, bool w_check, bool b_check) {
+Board::Board(std::array<std::array<int, 8>, 8> data, bool w_turn, int w_king_pos, int b_king_pos, bool w_check, bool b_check, std::array<bool, 4> w_castle, std::array<bool, 4> b_castle,
+ int en_passant, int promotion_pos) {
     this->data = data;
     this->w_turn = w_turn;
     this->w_king_pos = w_king_pos;
     this->b_king_pos = b_king_pos;
     this->w_check = w_check;
     this->b_check = b_check;
+    this->w_castle = w_castle;
+    this->b_castle = b_castle;
+    this->en_passant = en_passant;
+    this->promotion_pos = promotion_pos;
 }

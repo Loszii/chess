@@ -32,9 +32,15 @@ class Game {
         //movement
         int move_piece(int start_pos, int end_pos, Board& board);
         void undo_move_piece(int start_pos, int end_pos, int captured_piece, Board& board);
+        std::vector<std::vector<int>> get_all_legal_moves(Board& board);
+        std::array<bool, 4> check_castle(bool w_turn, Board& board);
+        int check_en_passant(int start_pos, int end_pos, Board& board);
+        int promote_pawns(Board& board); //note: call undo_move_piece before reverting this value
 
     private:
-
+        const int SCREEN_WIDTH = 784;
+        const int SCREEN_HEIGHT = 784;
+        const int FONT_SIZE = 100;
         const int SQUARE_WIDTH = 96;
         const int BEVEL = 8;
         const double SCALE = 0.75;
@@ -44,10 +50,11 @@ class Game {
         void draw_select(int pos, Color color);
         //functionality
         void check_for_selection(int pos);
-        void update_board();
+        void update_board(int start_pos, int end_pos);
         void swap_turn();
         bool under_attack(int pos, std::vector<int> enemy_moves);
         int get_piece_pos(int piece);
+        void check_game_over(Board& board);
         //movement
         std::vector<int> get_pawn_moves(int i, int j, Board& board);
         std::vector<int> get_bishop_moves(int i, int j, Board& board);
