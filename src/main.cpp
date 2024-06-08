@@ -6,18 +6,14 @@
 #include "game.h"
 
 //to do: use two stacks with board structs to undo moves
+//in update board, check if stalemate by reaching the same board 3 times, use a hashmap and hash each board
+//overload board equivalence operator to use them as keys
+
+//in minimax, hash[board] += 1 occurance,
+//before calling eval/recursion check if hash[board] == 3 then set Value to 0
+//before undoing updates hash[board] -= 1
 
 //all positions in this program are of form i*10 + j
-
-//TO DO
-
-//for promotion, make end_pos a number like 204, which represented a promotion to a bishop at pos 04. this way can undo move just given the positions.
-//will need to change the way we select moves
-//add promotion positions to cord to show in center of screen on top of a menu.
-//if a move with end_pos > 100 is in moves list, open a pawn promotion menu that allows user to pick
-//must mod all positions by 100 to properly get their position on the board
-
-//pawn must block castling
 
 //implement minimax inside of game.cpp (not in its own file)
 
@@ -36,10 +32,13 @@ int main() {
         BeginDrawing();
         ClearBackground(WHITE);
         game.draw_game(); //draws pieces and board
+        if (game.is_promoting != -1) {
+            game.promotion_menu();
+        }
         EndDrawing();
 
         //functionality
-        if (game.game_over == 0) {
+        if (game.game_over == 0 && game.is_promoting == -1) {
             if (game.board.w_turn) {
                 if (IsMouseButtonPressed(0)) {
                     int pos = game.get_index(GetMouseX(), GetMouseY());
@@ -54,6 +53,32 @@ int main() {
                     int pos = game.get_index(GetMouseX(), GetMouseY());
                     if (pos != -1) {
                         game.select_move(pos);
+                    }
+                }
+            }
+        } else if (game.is_promoting != -1) {
+            //check if mouse selects a piece to promote, then calls apply_prom(is_promoting + pieceval*100)
+            if (IsMouseButtonPressed(0)) {
+                int x = GetMouseX();
+                int y = GetMouseY();
+                if ((SCREEN_WIDTH - 256) / 2 <= x && x <= ((SCREEN_WIDTH - 256) / 2) + 128) {//bishop
+                    if ((SCREEN_WIDTH - 256) / 2 <= y && y <= ((SCREEN_WIDTH - 256) / 2) + 128) {
+                        game.apply_promotion(200 + game.is_promoting);
+                    }
+                }
+                if ((SCREEN_WIDTH - 256) / 2 + 128 <= x && x <= ((SCREEN_WIDTH - 256) / 2) + 256) {//knight
+                    if ((SCREEN_WIDTH - 256) / 2 <= y && y <= ((SCREEN_WIDTH - 256) / 2) + 128) {
+                        game.apply_promotion(300 + game.is_promoting);
+                    }
+                }
+                if ((SCREEN_WIDTH - 256) / 2 <= x && x <= ((SCREEN_WIDTH - 256) / 2) + 128) {//rook
+                    if (((SCREEN_WIDTH - 256) / 2) + 128 <= y && y <= ((SCREEN_WIDTH - 256) / 2) + 256) {
+                        game.apply_promotion(400 + game.is_promoting);
+                    }
+                }
+                if ((SCREEN_WIDTH - 256) / 2 + 128 <= x && x <= ((SCREEN_WIDTH - 256) / 2) + 256) {//queen
+                    if (((SCREEN_WIDTH - 256) / 2) + 128 <= y && y <= ((SCREEN_WIDTH - 256) / 2) + 256) {
+                        game.apply_promotion(500 + game.is_promoting);
                     }
                 }
             }

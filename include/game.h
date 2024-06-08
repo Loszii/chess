@@ -12,25 +12,24 @@ class Game {
 
         Board board;
         int game_over = 0;
-        std::vector<int> moves; //storage for current possible moves of selected piece
+        int is_promoting = -1;
 
         std::unordered_map<int, Texture2D> skins; //skin textures maps num to Texture2D
         Texture2D board_texture;
         Texture2D select_texture;
-
-        bool select = false;
-        int select_pos = -1;
 
         //constructor
         Game();
         Game(bool textures);
         //drawing
         void draw_game();
+        void promotion_menu();
         //functionality
         void select_move(int pos);
         int get_index(int x, int y);
         Board update_board(int start_pos, int end_pos);
         void undo_update_board(Board old_board);
+        void apply_promotion(int pos);
         //movement
         std::vector<std::vector<int>> get_all_legal_moves();
 
@@ -42,10 +41,15 @@ class Game {
         const int BEVEL = 8;
         const double SCALE = 0.75;
         
+        std::vector<int> promotion_positions;
+        std::vector<int> moves; //storage for current possible moves of selected piece
+        bool select = false;
+        int select_pos = -1;
         std::unordered_map<int, std::tuple<int, int>> coord; //mapping of indices to x-y coord in window
         //drawing
         void draw_select(int pos, Color color);
         //functionality
+        void set_promotion_pos();
         void check_for_selection(int pos);
         void swap_turn();
         bool under_attack(int pos, std::vector<int> enemy_moves);

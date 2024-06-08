@@ -71,6 +71,7 @@ Game::Game(bool textures) {
 }
 
 void Game::draw_game() {
+    //draws the board, pieces, check indicators, available moves, and end game screens
     DrawTexture(board_texture, 0, 0, WHITE); //board
     int x;
     int y;
@@ -85,11 +86,19 @@ void Game::draw_game() {
         }
     }
 
-    //shades in selected squares
+    //shades in piece and possible moves
     if (select) {
         draw_select(select_pos, Color{0, 0, 0, 150});
-        for (int i=0; i < (int)moves.size(); i++) {
-            draw_select(moves[i], Color{0, 0, 0, 150});
+        if (!moves.empty()) {
+            if (moves[0] < 100) { //not a promoting pawn
+                for (int i=0; i < (int)moves.size(); i++) {
+                    draw_select(moves[i], Color{0, 0, 0, 150});
+                }
+            } else {
+                for (int i=0; i < (int)promotion_positions.size(); i++) {
+                    draw_select(promotion_positions[i], Color{0, 0, 0, 150});
+                }
+            }
         }
     }
 
@@ -120,20 +129,80 @@ void Game::draw_select(int pos, Color color) {
     DrawTextureEx(select_texture, (Vector2){(float)x, (float)y}, 0, 1, color);
 }
 
+void Game::set_promotion_pos() {
+    //sets promotion_positions to the positions a pawn can promote to or clears it if no current promotion
+    if (moves.empty()) {
+        promotion_positions.clear();
+        return;
+    } else if (moves[0] < 100) { //nothing promoting
+        promotion_positions.clear();
+        return;
+    }
+    std::vector<int> result;
+    bool already_checked = false;
+    for (int i=0; i < (int)moves.size(); i++) {
+        for (int j=0; j < (int)result.size(); j++) {
+            if (moves[i]%100 == result[j]) {
+                already_checked = true;
+            }
+        }
+        if (!already_checked) {
+            result.push_back(moves[i]%100);
+        }
+        already_checked = false;
+    }
+    promotion_positions = result;
+}
+
+void Game::apply_promotion(int pos) {
+    //given a position of three digits, promote pawn at select_pos to pos
+    update_board(select_pos, pos);
+    check_game_over(); //checks for end of game
+    is_promoting = -1; //disables promotion menu
+}
+
+void Game::promotion_menu() {
+    //prompts the player to select a piece to promote
+
+    //menu 256px by 256px
+    int side = 1;
+    int menu_x = (SCREEN_WIDTH - 256) / 2;
+    int menu_y = (SCREEN_WIDTH - 256) / 2;
+    int piece_width = 128;
+    //menu
+    DrawRectangle(menu_x - 5, menu_y - 5, 256 + 10, 256 + 10, BLACK); //dropshadow
+    DrawRectangle(menu_x, menu_y, 256, 256, WHITE);
+    if (!board.w_turn) {
+        side = -1;
+    }
+    DrawTextureEx(skins[side * 2], (Vector2){(float)menu_x, (float)menu_y}, 0, 1.0, WHITE);
+    DrawTextureEx(skins[side * 3], (Vector2){(float)(menu_x + piece_width), (float)menu_y}, 0, 1.0, WHITE);
+    DrawTextureEx(skins[side * 4], (Vector2){(float)menu_x, (float)(menu_y + piece_width)}, 0, 1.0, WHITE);
+    DrawTextureEx(skins[side * 5], (Vector2){(float)(menu_x + piece_width), (float)(menu_y + piece_width)}, 0, 1.0, WHITE);
+}
+
 void Game::select_move(int pos) {
     //takes in a position and selects either a piece or a move to make
     if (select) {
         //check if mouse was clicked on a available move
-        for (int i=0; i < (int)moves.size(); i++) {
-
-            //if moves[i] >= 100, show moves[i] % 100 on board and show promotion menu
-
-
-            if (pos == moves[i]) {
-                select = false;
-                update_board(select_pos, pos);
-                check_game_over();
-                break;
+        if (!moves.empty()) {
+            if (moves[0] < 100) { //not promoting
+                for (int i=0; i < (int)moves.size(); i++) {
+                    if (pos == moves[i]) {
+                        select = false;
+                        update_board(select_pos, pos);
+                        check_game_over(); //checks for end of game
+                        break;
+                    }
+                }
+            } else {
+                for (int i=0; i < (int)promotion_positions.size(); i++) {
+                    if (pos == promotion_positions[i]) {
+                        select = false;
+                        is_promoting = pos;
+                        break;
+                    }
+                }
             }
         }
         if (select) { //if still selecting and didnt make viable move
@@ -153,6 +222,7 @@ void Game::check_for_selection(int pos) {
         select = true;
         select_pos = pos;
         moves = get_legal_moves(pos); //gets possible moves
+        set_promotion_pos(); //adds any promo squares
     } else {
         select = false;
     }
