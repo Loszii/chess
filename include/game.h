@@ -7,6 +7,29 @@
 
 #pragma once
 
+struct BoardHasher {
+    //hash function for board
+    std::size_t operator()(const Board& b) const {
+        std::size_t hash = 0;
+        //board
+        for (int i=0; i < 8; i++) {
+            for (int j=0; j < 8; j++) {
+                hash ^= std::hash<int>()(b.data[i][j]);
+            }
+        }
+        //turn
+        hash ^= std::hash<bool>()(b.w_turn);
+        //castles
+        for (int i=0; i < 4; i++) {
+            hash ^= std::hash<bool>()(b.w_castle[i]);
+            hash ^= std::hash<bool>()(b.b_castle[i]);
+        }
+        //en passant
+        hash ^= std::hash<int>()(b.en_passant);
+        return hash;
+    }
+};
+
 class Game {
     public:
 
@@ -41,6 +64,7 @@ class Game {
         const int BEVEL = 8;
         const double SCALE = 0.75;
         
+        std::unordered_map<Board, int, BoardHasher> history; //prev boards
         std::vector<int> promotion_positions;
         std::vector<int> moves; //storage for current possible moves of selected piece
         bool select = false;
@@ -55,6 +79,8 @@ class Game {
         bool under_attack(int pos, std::vector<int> enemy_moves);
         int get_piece_pos(int piece);
         void check_game_over();
+        bool hash_board();
+        void undo_hash_board();
         //movement
         void move_piece(int start_pos, int end_pos);
         void check_castle(std::vector<int> enemy_moves);

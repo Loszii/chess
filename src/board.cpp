@@ -34,3 +34,12 @@ Board::Board(std::array<std::array<int, 8>, 8> data, bool w_turn, int w_king_pos
     this->b_castle = b_castle;
     this->en_passant = en_passant;
 }
+
+bool Board::operator==(const Board& other) const {
+    //improve this
+    if (data == other.data && w_turn == other.w_turn && w_castle == other.w_castle && b_castle == other.b_castle && en_passant == other.en_passant) {
+        return true;
+    } else {
+        return false;
+    }
+}

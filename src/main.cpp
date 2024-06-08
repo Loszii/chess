@@ -13,9 +13,12 @@
 //before calling eval/recursion check if hash[board] == 3 then set Value to 0
 //before undoing updates hash[board] -= 1
 
+//make a check_draw() function that called hash_board() and a new function that checks if insufficient material and just returns true or false if draw
+
 //all positions in this program are of form i*10 + j
 
 //implement minimax inside of game.cpp (not in its own file)
+
 
 const int SCREEN_WIDTH = 784;
 const int SCREEN_HEIGHT = 784;

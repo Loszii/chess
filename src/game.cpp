@@ -35,6 +35,9 @@ Game::Game() {
             x += SQUARE_WIDTH;
         }
     }
+
+    //hashing first board
+    history[board] = 1;
 }
 
 Game::Game(bool textures) {
@@ -68,6 +71,8 @@ Game::Game(bool textures) {
             x += SQUARE_WIDTH;
         }
     }
+    //hashing first board
+    history[board] = 1;
 }
 
 void Game::draw_game() {
@@ -119,6 +124,11 @@ void Game::draw_game() {
         int x = (SCREEN_WIDTH - text_width) / 2;
         int y = (SCREEN_HEIGHT - FONT_SIZE) / 2;
         DrawText("STALEMATE", x, y, FONT_SIZE, RED);
+    } else if (game_over == 3) { //3 draw
+        int text_width = MeasureText("DRAW", FONT_SIZE);
+        int x = (SCREEN_WIDTH - text_width) / 2;
+        int y = (SCREEN_HEIGHT - FONT_SIZE) / 2;
+        DrawText("DRAW", x, y, FONT_SIZE, RED);
     }
 }
 
@@ -157,6 +167,9 @@ void Game::set_promotion_pos() {
 void Game::apply_promotion(int pos) {
     //given a position of three digits, promote pawn at select_pos to pos
     update_board(select_pos, pos);
+    if (hash_board()) { //3 repition
+        game_over = 3;
+    }
     check_game_over(); //checks for end of game
     is_promoting = -1; //disables promotion menu
 }
@@ -191,6 +204,9 @@ void Game::select_move(int pos) {
                     if (pos == moves[i]) {
                         select = false;
                         update_board(select_pos, pos);
+                        if (hash_board()) { //3 repition
+                            game_over = 3;
+                        }
                         check_game_over(); //checks for end of game
                         break;
                     }
@@ -314,6 +330,25 @@ void Game::check_game_over() {
             game_over = 1;
         }
     }
+}
+
+bool Game::hash_board() {
+    //returns true if 3 repition is achieved, hashes current board
+    if (history.find(board) != history.end()) { //in map
+        history[board] += 1;
+    } else {
+        history[board] = 1;
+    }
+    if (history[board] == 3) { //must be draw
+        return true;
+    } else {
+        return false;
+    }
+}
+
+void Game::undo_hash_board() {
+    //undoes a hashing of board to history, to be used with minimax when evaluating positions
+    history[board] -= 1;
 }
 
 void Game::move_piece(int start_pos, int end_pos) {
