@@ -79,6 +79,9 @@ class Game {
         bool under_attack(int pos, std::vector<int> enemy_moves);
         int get_piece_pos(int piece);
         void check_game_over();
+        void check_draw();
+        bool insuf_material();
+        std::unordered_map<int, int> get_material();
         bool hash_board();
         void undo_hash_board();
         //movement

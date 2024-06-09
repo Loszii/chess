@@ -141,6 +141,7 @@ void Game::draw_select(int pos, Color color) {
 
 void Game::set_promotion_pos() {
     //sets promotion_positions to the positions a pawn can promote to or clears it if no current promotion
+    //removes duplicates (303, 203, 403, 503 = 03)
     if (moves.empty()) {
         promotion_positions.clear();
         return;
@@ -167,9 +168,7 @@ void Game::set_promotion_pos() {
 void Game::apply_promotion(int pos) {
     //given a position of three digits, promote pawn at select_pos to pos
     update_board(select_pos, pos);
-    if (hash_board()) { //3 repition
-        game_over = 3;
-    }
+    check_draw();
     check_game_over(); //checks for end of game
     is_promoting = -1; //disables promotion menu
 }
@@ -204,9 +203,7 @@ void Game::select_move(int pos) {
                     if (pos == moves[i]) {
                         select = false;
                         update_board(select_pos, pos);
-                        if (hash_board()) { //3 repition
-                            game_over = 3;
-                        }
+                        check_draw();
                         check_game_over(); //checks for end of game
                         break;
                     }
@@ -330,6 +327,56 @@ void Game::check_game_over() {
             game_over = 1;
         }
     }
+}
+
+void Game::check_draw() {
+    //hash board and see if == 3
+    if (hash_board()) { //3 repition
+        game_over = 3;
+    } else if (insuf_material()) { //insufficient material
+        game_over = 3;
+    }
+}
+
+bool Game::insuf_material() {
+    //returns true if there is insufficient material and draw must be concluded
+    //can only have one of below for each side and no other pieces (and king ofc)
+    std::unordered_map<int, int> mats = get_material();
+    if (mats[-5] > 0 || mats[5] > 0) { //either have a queen
+        return false;
+    } else if (mats[-4] > 0 || mats[4] > 0) { //either have a rook
+        return false;
+    } else if (mats[-3] > 1 || mats[3] > 1) { //either have more than one knight
+        return false;
+    } else if (mats[-2] > 1 || mats[2] > 1) { //either have more than one bishop
+        return false;
+    } else if (mats[-3] == 1 && mats[-2] == 1) { //black has a bishop and a knight (can only have one)
+        return false;
+    } else if (mats[3] == 1 && mats[2] == 1) { //white has a bishop and a knight
+        return false;
+    } else if (mats[-1] > 0 || mats[1] > 0) { //either havs a pawn
+        return false;
+    } else { //ran out of material so must be draw
+        return true;
+    }
+}
+
+std::unordered_map<int, int> Game::get_material() {
+    //returns a mapping of piece to occurance
+    std::unordered_map<int, int> result;
+    //init values
+    for (int i=-6; i < 7; i++) {
+        if (i != 0) {
+            result[i] = 0;
+        }
+    }
+    //count em
+    for (int i=0; i < (int)board.data.size(); i++) {
+        for (int j=0; j < (int)board.data[i].size(); j++) {
+            result[board.data[i][j]] += 1;
+        }
+    }
+    return result;
 }
 
 bool Game::hash_board() {

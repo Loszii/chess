@@ -6,19 +6,12 @@
 #include "game.h"
 
 //to do: use two stacks with board structs to undo moves
-//in update board, check if stalemate by reaching the same board 3 times, use a hashmap and hash each board
-//overload board equivalence operator to use them as keys
 
-//in minimax, hash[board] += 1 occurance,
-//before calling eval/recursion check if hash[board] == 3 then set Value to 0
-//before undoing updates hash[board] -= 1
-
-//make a check_draw() function that called hash_board() and a new function that checks if insufficient material and just returns true or false if draw
+//3 move repition faulty regarding updating castling only when it is a players move to go. maybe fix
 
 //all positions in this program are of form i*10 + j
 
 //implement minimax inside of game.cpp (not in its own file)
-
 
 const int SCREEN_WIDTH = 784;
 const int SCREEN_HEIGHT = 784;
