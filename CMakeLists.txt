@@ -18,6 +18,7 @@ FetchContent_MakeAvailable(raylib)
 #sources and headers defined here
 set(SOURCES 
     src/game.cpp
+    src/engine.cpp
     src/board.cpp)
 
 set(HEADERS

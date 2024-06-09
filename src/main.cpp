@@ -11,7 +11,6 @@
 
 //all positions in this program are of form i*10 + j
 
-//implement minimax inside of game.cpp (not in its own file)
 
 const int SCREEN_WIDTH = 784;
 const int SCREEN_HEIGHT = 784;
@@ -35,7 +34,7 @@ int main() {
 
         //functionality
         if (game.game_over == 0 && game.is_promoting == -1) {
-            if (game.board.w_turn) {
+            if (game.player_turn) {
                 if (IsMouseButtonPressed(0)) {
                     int pos = game.get_index(GetMouseX(), GetMouseY());
                     if (pos != -1) {
@@ -43,20 +42,14 @@ int main() {
                     }
                 }
             } else {
-                //oppponent turn
-                //for now just same thing, this code will eventually be a minimax algorithm
-                if (IsMouseButtonPressed(0)) {
-                    int pos = game.get_index(GetMouseX(), GetMouseY());
-                    if (pos != -1) {
-                        game.select_move(pos);
-                    }
-                }
+                game.engine_move();
             }
         } else if (game.is_promoting != -1) {
             //check if mouse selects a piece to promote, then calls apply_prom(is_promoting + pieceval*100)
             if (IsMouseButtonPressed(0)) {
                 int x = GetMouseX();
                 int y = GetMouseY();
+                //put below in game function prob
                 if ((SCREEN_WIDTH - 256) / 2 <= x && x <= ((SCREEN_WIDTH - 256) / 2) + 128) {//bishop
                     if ((SCREEN_WIDTH - 256) / 2 <= y && y <= ((SCREEN_WIDTH - 256) / 2) + 128) {
                         game.apply_promotion(200 + game.is_promoting);

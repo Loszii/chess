@@ -36,6 +36,7 @@ class Game {
         Board board;
         int game_over = 0;
         int is_promoting = -1;
+        bool player_turn;
 
         std::unordered_map<int, Texture2D> skins; //skin textures maps num to Texture2D
         Texture2D board_texture;
@@ -55,6 +56,8 @@ class Game {
         void apply_promotion(int pos);
         //movement
         std::vector<std::vector<int>> get_all_legal_moves();
+        //engine
+        void engine_move();
 
     private:
         const int SCREEN_WIDTH = 784;
@@ -98,4 +101,6 @@ class Game {
         std::vector<int> get_all_trajectories();
         std::vector<int> get_all_trajectories(bool w_turn);
         std::vector<int> get_legal_moves(int pos);
+        //engine
+        std::array<int, 2> minimax();
 };

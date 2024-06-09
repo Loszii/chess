@@ -3,10 +3,24 @@
 #include <tuple>
 #include <vector>
 #include <array>
+#include <random>
 #include "game.h"
 #include "raylib.h"
 
 Game::Game() {
+
+    //player turn random
+    std::random_device rd;
+    std::mt19937 gen(rd());
+    std::uniform_int_distribution<> distr(0, 1);
+    int num = distr(gen);
+    if (num == 0) {
+        player_turn = false;
+    } else {
+        player_turn = true;
+    }
+
+
     board_texture = LoadTexture("../res/board.png");
     select_texture = LoadTexture("../res/selector.png");
 
@@ -27,12 +41,23 @@ Game::Game() {
     //coord
     int x;
     int y;
-    for (int i=0; i < 80; i += 10) {
-        x = BEVEL;
-        y = BEVEL + ((i/10) * SQUARE_WIDTH);
-        for (int j=0; j < 8; j++) {
-            coord[i+j] = std::make_tuple(x, y);
-            x += SQUARE_WIDTH;
+    if (player_turn) {
+        for (int i=0; i < 80; i += 10) {
+            x = BEVEL;
+            y = BEVEL + ((i/10) * SQUARE_WIDTH);
+            for (int j=0; j < 8; j++) {
+                coord[i+j] = std::make_tuple(x, y);
+                x += SQUARE_WIDTH;
+            }
+        }
+    } else { //player is playing as black so flip
+        for (int i=0; i < 8; i++) {
+            x = BEVEL;
+            y = BEVEL + ((i) * SQUARE_WIDTH);
+            for (int j=0; j < 8; j++) {
+                coord[10*(7-i)+(7-j)] = std::make_tuple(x, y);
+                x += SQUARE_WIDTH;
+            }
         }
     }
 
@@ -60,15 +85,37 @@ Game::Game(bool textures) {
         skins[-6] = LoadTexture("../res/b-king.png");
     }
 
+    //player turn random
+    std::random_device rd;
+    std::mt19937 gen(rd());
+    std::uniform_int_distribution<> distr(0, 1);
+    int num = distr(gen);
+    if (num == 0) {
+        player_turn = false;
+    } else {
+        player_turn = true;
+    }
+
     //coord
     int x;
     int y;
-    for (int i=0; i < 80; i += 10) {
-        x = BEVEL;
-        y = BEVEL + ((i/10) * SQUARE_WIDTH);
-        for (int j=0; j < 8; j++) {
-            coord[i+j] = std::make_tuple(x, y);
-            x += SQUARE_WIDTH;
+    if (player_turn) {
+        for (int i=0; i < 80; i += 10) {
+            x = BEVEL;
+            y = BEVEL + ((i/10) * SQUARE_WIDTH);
+            for (int j=0; j < 8; j++) {
+                coord[i+j] = std::make_tuple(x, y);
+                x += SQUARE_WIDTH;
+            }
+        }
+    } else { //flipped
+        for (int i=0; i < 8; i++) {
+            x = BEVEL;
+            y = BEVEL + ((i) * SQUARE_WIDTH);
+            for (int j=0; j < 8; j++) {
+                coord[10*(7-i)+(7-j)] = std::make_tuple(x, y);
+                x += SQUARE_WIDTH;
+            }
         }
     }
     //hashing first board
@@ -248,18 +295,19 @@ int Game::get_index(int x, int y) {
     int j = y - BEVEL;
     j = j / SQUARE_WIDTH;
     if (i >= 0 && i <= 7 && j >= 0 && j <= 7) {
-        return 10*j + i;
+        if (player_turn && board.w_turn) {
+            return 10*j + i;
+        } else { //swap for black player
+            return 10*(7-j) + (7-i);
+        }
     } else {
         return -1; //cannot find index
     }
 }
 
 void Game::swap_turn() {
-    if (board.w_turn) {
-        board.w_turn = false;
-    } else {
-        board.w_turn = true;
-    }
+    board.w_turn = !board.w_turn;
+    player_turn = !player_turn;
 }
 
 Board Game::update_board(int start_pos, int end_pos) {
@@ -288,6 +336,7 @@ Board Game::update_board(int start_pos, int end_pos) {
 
 void Game::undo_update_board(Board old_board) {
     board = old_board;
+    player_turn = !player_turn;
 }
 
 bool Game::under_attack(int pos, std::vector<int> enemy_moves) {
@@ -316,15 +365,18 @@ void Game::check_game_over() {
     //checks if game has ended, 2 = checkmate, 1 = stalemate, negative is if black won
     std::vector<std::vector<int>> all_moves = get_all_legal_moves();
     if ((int)all_moves.size() == 0) {
-        if (board.w_turn && board.w_check) {
-            game_over = -2;
+        if (board.w_turn) {
+            if (board.w_check) {
+                game_over = -2;
+            } else {
+                game_over = -1;
+            }
         } else {
-            game_over = -1;
-        }
-        if (!board.w_turn && board.b_check) {
-            game_over = 2;
-        } else {
-            game_over = 1;
+            if (board.b_check) {
+                game_over = 2;
+            } else {
+                game_over = 1;
+            }
         }
     }
 }
