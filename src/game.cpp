@@ -168,6 +168,29 @@ void Game::apply_promotion(int pos) {
     is_promoting = -1; //disables promotion menu
 }
 
+void Game::pick_a_piece(int x, int y) {
+    if ((SCREEN_WIDTH - 256) / 2 <= x && x <= ((SCREEN_WIDTH - 256) / 2) + 128) {//bishop
+        if ((SCREEN_WIDTH - 256) / 2 <= y && y <= ((SCREEN_WIDTH - 256) / 2) + 128) {
+            apply_promotion(200 + is_promoting);
+        }
+    }
+    if ((SCREEN_WIDTH - 256) / 2 + 128 <= x && x <= ((SCREEN_WIDTH - 256) / 2) + 256) {//knight
+        if ((SCREEN_WIDTH - 256) / 2 <= y && y <= ((SCREEN_WIDTH - 256) / 2) + 128) {
+            apply_promotion(300 + is_promoting);
+        }
+    }
+    if ((SCREEN_WIDTH - 256) / 2 <= x && x <= ((SCREEN_WIDTH - 256) / 2) + 128) {//rook
+        if (((SCREEN_WIDTH - 256) / 2) + 128 <= y && y <= ((SCREEN_WIDTH - 256) / 2) + 256) {
+            apply_promotion(400 + is_promoting);
+        }
+    }
+    if ((SCREEN_WIDTH - 256) / 2 + 128 <= x && x <= ((SCREEN_WIDTH - 256) / 2) + 256) {//queen
+        if (((SCREEN_WIDTH - 256) / 2) + 128 <= y && y <= ((SCREEN_WIDTH - 256) / 2) + 256) {
+            apply_promotion(500 + is_promoting);
+        }
+    }
+}
+
 void Game::promotion_menu() {
     //prompts the player to select a piece to promote
 
@@ -289,7 +312,7 @@ void Game::undo_update_board(Board old_board) {
     player_turn = !player_turn;
 }
 
-bool Game::under_attack(int pos, std::vector<int> enemy_moves) {
+bool Game::under_attack(int pos, const std::vector<int>& enemy_moves) {
     //returns true if position is in enemy moves array
     for (int i=0; i < (int)enemy_moves.size(); i++) {
         if (enemy_moves[i]%100 == pos) { //mod 100 to ignore promotion code
@@ -457,11 +480,8 @@ void Game::move_piece(int start_pos, int end_pos) {
     board.data[start_pos] = 0;
 }
 
-std::vector<int> Game::get_pawn_moves(int pos) {
+void Game::get_pawn_moves(int pos, std::vector<int>& result) {
 
-    //to do, if can promote append 2pos, 3pos, 4pos, 5pos for all different pieces that can promote too
-
-    std::vector<int> result;
     bool w_turn; //must have local turn since we can be checking enemy pawn moves
     //promotion checks
     bool will_promote = false;
@@ -520,14 +540,11 @@ std::vector<int> Game::get_pawn_moves(int pos) {
             promotion_result.push_back(400 + pos);
             promotion_result.push_back(500 + pos);
         }
-        return promotion_result;
-    } else {
-        return result;
+        result = promotion_result;
     }
 }
 
-std::vector<int> Game::get_bishop_moves(int pos) {
-    std::vector<int> result;
+void Game::get_bishop_moves(int pos, std::vector<int>& result) {
     bool w_turn;
     if (board.data[pos] > 0) {
         w_turn = true;
@@ -593,11 +610,9 @@ std::vector<int> Game::get_bishop_moves(int pos) {
             temp += 9;
         }
     }
-    return result;
 }
 
-std::vector<int> Game::get_knight_moves(int pos) {
-    std::vector<int> result;
+void Game::get_knight_moves(int pos, std::vector<int>& result) {
     bool w_turn;
     if (board.data[pos] > 0) {
         w_turn = true;
@@ -660,11 +675,9 @@ std::vector<int> Game::get_knight_moves(int pos) {
             }
         }
     }
-    return result;
 }
 
-std::vector<int> Game::get_rook_moves(int pos) {
-    std::vector<int> result;
+void Game::get_rook_moves(int pos, std::vector<int>& result) {
     bool w_turn;
     if (board.data[pos] > 0) {
         w_turn = true;
@@ -727,24 +740,14 @@ std::vector<int> Game::get_rook_moves(int pos) {
             temp -= 1;
         }
     }
-    return result;
 }
 
-std::vector<int> Game::get_queen_moves(int pos) {
-    std::vector<int> result;
-    std::vector<int> temp = get_bishop_moves(pos);
-    for (int k=0; k < (int)temp.size(); k++) {
-        result.push_back(temp[k]);
-    }
-    temp = get_rook_moves(pos);
-    for (int k=0; k < (int)temp.size(); k++) {
-        result.push_back(temp[k]);
-    }
-    return result;
+void Game::get_queen_moves(int pos, std::vector<int>& result) {
+    get_bishop_moves(pos, result);
+    get_rook_moves(pos, result);
 }
 
-std::vector<int> Game::get_king_moves(int pos) {
-    std::vector<int> result;
+void Game::get_king_moves(int pos, std::vector<int>& result) {
     bool w_turn;
     if (board.data[pos] > 0) {
         w_turn = true;
@@ -845,7 +848,6 @@ std::vector<int> Game::get_king_moves(int pos) {
     if (castle[2] && castle[3]) { //left
         result.push_back(king - 2);
     }
-    return result;
 }
 
 std::vector<int> Game::get_trajectory(int pos) {
@@ -855,19 +857,39 @@ std::vector<int> Game::get_trajectory(int pos) {
     int piece = board.data[pos];
 
     if (piece == 1 || piece == -1) {
-        result = get_pawn_moves(pos);
+        get_pawn_moves(pos, result);
     } else if (piece == 2 || piece == -2) {
-        result = get_bishop_moves(pos);
+        get_bishop_moves(pos, result);
     } else if (piece == 3 || piece == -3) {
-        result = get_knight_moves(pos);
+        get_knight_moves(pos, result);
     } else if (piece == 4 || piece == -4) {
-        result = get_rook_moves(pos);
+        get_rook_moves(pos, result);
     } else if (piece == 5 || piece == -5) {
-        result = get_queen_moves(pos);
+        get_queen_moves(pos, result);
     } else if (piece == 6 || piece == -6) {
-        result = get_king_moves(pos);
+        get_king_moves(pos, result);
     }
     return result;
+}
+
+void Game::get_trajectory(int pos, std::vector<int>& result) {
+    //returns all possible indices to move, legal or not
+
+    int piece = board.data[pos];
+
+    if (piece == 1 || piece == -1) {
+        get_pawn_moves(pos, result);
+    } else if (piece == 2 || piece == -2) {
+        get_bishop_moves(pos, result);
+    } else if (piece == 3 || piece == -3) {
+        get_knight_moves(pos, result);
+    } else if (piece == 4 || piece == -4) {
+        get_rook_moves(pos, result);
+    } else if (piece == 5 || piece == -5) {
+        get_queen_moves(pos, result);
+    } else if (piece == 6 || piece == -6) {
+        get_king_moves(pos, result);
+    }
 }
 
 std::vector<int> Game::get_all_trajectories() {
@@ -876,10 +898,7 @@ std::vector<int> Game::get_all_trajectories() {
 
     for (int i=0; i < 64; i++) {
         if ((board.w_turn && board.data[i] > 0) || (!board.w_turn && board.data[i] < 0)) { //determines black or white side
-            std::vector<int> trajectory = get_trajectory(i); //get all piece
-            for (int k=0; k < (int)trajectory.size(); k++) {
-                result.push_back(trajectory[k]); //add to final array
-            }
+            get_trajectory(i, result); //get all piece
         }
     }
 
@@ -892,17 +911,13 @@ std::vector<int> Game::get_all_trajectories(bool w_turn) {
 
     for (int i=0; i < 64; i++) {
         if ((w_turn && board.data[i] > 0) || (!w_turn && board.data[i] < 0)) { //determines black or white side
-            std::vector<int> trajectory = get_trajectory(i); //get all piece
-            for (int k=0; k < (int)trajectory.size(); k++) {
-                result.push_back(trajectory[k]); //add to final array
-            }
+            get_trajectory(i, result); //get all piece
         }
     }
-    
+
     return result;
 }
 
-//fix the way we are updating after making and unmaking moves
 std::vector<int> Game::get_legal_moves(int pos) {
     //uses board in parameter
     std::vector<int> result;
@@ -945,7 +960,7 @@ std::vector<std::vector<int>> Game::get_all_legal_moves() {
     return result;
 }
 
-void Game::check_castle(std::vector<int> enemy_moves) {
+void Game::check_castle(const std::vector<int>& enemy_moves) {
     //updates castle array for player to move, returns old array
     std::array<bool, 4>* castle;
     if (board.w_turn) {

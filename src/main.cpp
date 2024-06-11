@@ -5,22 +5,21 @@
 #include "raylib.h"
 #include "game.h"
 
-//to do: use two stacks with board structs to undo moves
+/*
+to do: 
+-use two stacks with board structs to undo moves
 
-//3 move repition faulty regarding updating castling only when it is a players move to go. maybe fix
+-3 move repition faulty regarding updating castling only when it is a players move to go. maybe fix
+
+-to speed up castling only check temps if perms are true
+
+-look over move generation and remove/improve redundant code
+
+-look into mailboxing and using an out of bounds portion of array to speed things up8
+*/
+
 
 //board represented as array, squares range from [0, 63]
-
-//instead of copying board to undo move just move the piece back, and copy castle values ect.
-
-//make moves append to a parameter, will speed up functions, make all trajectories pass them all the same one
-//to speed up castling only check temps if perms are true
-
-//make check for selection legal_moves and swap side of board again when everything is fixed
-
-
-//bishops on side cant move
-
 const int SCREEN_WIDTH = 784;
 const int SCREEN_HEIGHT = 784;
 
@@ -60,31 +59,11 @@ int main() {
                 //game.engine_move();
             }
         } else if (game.is_promoting != -1) {
-            //check if mouse selects a piece to promote, then calls apply_prom(is_promoting + pieceval*100)
             if (IsMouseButtonPressed(0)) {
                 int x = GetMouseX();
                 int y = GetMouseY();
-                //put below in game function prob
-                if ((SCREEN_WIDTH - 256) / 2 <= x && x <= ((SCREEN_WIDTH - 256) / 2) + 128) {//bishop
-                    if ((SCREEN_WIDTH - 256) / 2 <= y && y <= ((SCREEN_WIDTH - 256) / 2) + 128) {
-                        game.apply_promotion(200 + game.is_promoting);
-                    }
-                }
-                if ((SCREEN_WIDTH - 256) / 2 + 128 <= x && x <= ((SCREEN_WIDTH - 256) / 2) + 256) {//knight
-                    if ((SCREEN_WIDTH - 256) / 2 <= y && y <= ((SCREEN_WIDTH - 256) / 2) + 128) {
-                        game.apply_promotion(300 + game.is_promoting);
-                    }
-                }
-                if ((SCREEN_WIDTH - 256) / 2 <= x && x <= ((SCREEN_WIDTH - 256) / 2) + 128) {//rook
-                    if (((SCREEN_WIDTH - 256) / 2) + 128 <= y && y <= ((SCREEN_WIDTH - 256) / 2) + 256) {
-                        game.apply_promotion(400 + game.is_promoting);
-                    }
-                }
-                if ((SCREEN_WIDTH - 256) / 2 + 128 <= x && x <= ((SCREEN_WIDTH - 256) / 2) + 256) {//queen
-                    if (((SCREEN_WIDTH - 256) / 2) + 128 <= y && y <= ((SCREEN_WIDTH - 256) / 2) + 256) {
-                        game.apply_promotion(500 + game.is_promoting);
-                    }
-                }
+
+                game.pick_a_piece(x, y);
             }
         }
     }

@@ -15,15 +15,6 @@ struct BoardHasher {
         for (int i=0; i < 64; i++) {
             hash ^= std::hash<int>()(b.data[i]);
         }
-        //turn
-        hash ^= std::hash<bool>()(b.w_turn);
-        //castles
-        for (int i=0; i < 4; i++) {
-            hash ^= std::hash<bool>()(b.w_castle[i]);
-            hash ^= std::hash<bool>()(b.b_castle[i]);
-        }
-        //en passant
-        hash ^= std::hash<int>()(b.en_passant);
         return hash;
     }
 };
@@ -51,6 +42,7 @@ class Game {
         Board update_board(int start_pos, int end_pos);
         void undo_update_board(Board old_board);
         void apply_promotion(int pos);
+        void pick_a_piece(int x, int y);
         //movement
         std::vector<std::vector<int>> get_all_legal_moves();
         //engine
@@ -76,7 +68,7 @@ class Game {
         void set_promotion_pos();
         void check_for_selection(int pos);
         void swap_turn();
-        bool under_attack(int pos, std::vector<int> enemy_moves);
+        bool under_attack(int pos, const std::vector<int>& enemy_moves);
         int get_piece_pos(int piece);
         void check_game_over();
         void check_draw();
@@ -86,15 +78,16 @@ class Game {
         void undo_hash_board();
         //movement
         void move_piece(int start_pos, int end_pos);
-        void check_castle(std::vector<int> enemy_moves);
+        void check_castle(const std::vector<int>& enemy_moves);
         void check_en_passant(int start_pos, int end_pos);
-        std::vector<int> get_pawn_moves(int pos);
-        std::vector<int> get_bishop_moves(int pos);
-        std::vector<int> get_knight_moves(int pos);
-        std::vector<int> get_rook_moves(int pos);
-        std::vector<int> get_queen_moves(int pos);
-        std::vector<int> get_king_moves(int pos);
+        void get_pawn_moves(int pos, std::vector<int>& result);
+        void get_bishop_moves(int pos, std::vector<int>& result);
+        void get_knight_moves(int pos, std::vector<int>& result);
+        void get_rook_moves(int pos, std::vector<int>& result);
+        void get_queen_moves(int pos, std::vector<int>& result);
+        void get_king_moves(int pos, std::vector<int>& result);
         std::vector<int> get_trajectory(int pos);
+        void get_trajectory(int pos, std::vector<int>& result);
         std::vector<int> get_all_trajectories();
         std::vector<int> get_all_trajectories(bool w_turn);
         std::vector<int> get_legal_moves(int pos);

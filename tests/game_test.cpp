@@ -35,8 +35,7 @@ TEST(Game, Perft) {
     //a debug function counting all possible board states from a position, the positions here are from the chess debug wiki
     //initial position
     Game game = Game(false); //false to not load any textures
-    ASSERT_EQ(perft(game, 4), (u64)197281);
-
+    ASSERT_EQ(perft(game, 5), (u64)4865609);
     //position 2
     game.board = Board(); //reset the board
     game.board.data = {-4, 0, 0, 0, -6, 0, 0, -4,
