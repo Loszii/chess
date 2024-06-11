@@ -9,13 +9,12 @@
 to do: 
 -use two stacks with board structs to undo moves
 
--3 move repition faulty regarding updating castling only when it is a players move to go. maybe fix
+-use fixed size arrays for board, and moves. board will be 64 size and moves will be 30
 
 -to speed up castling only check temps if perms are true
 
 -look over move generation and remove/improve redundant code
 
--look into mailboxing and using an out of bounds portion of array to speed things up8
 */
 
 

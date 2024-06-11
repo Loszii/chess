@@ -15,9 +15,7 @@ u64 perft(Game& game, int depth) {
     u64 nodes = 0;
     if (depth == 1) {
         for (int i=0; i < (int)moves.size(); i++) {
-            for (int j= 1; j < (int)moves[i].size(); j++) {
-                nodes += 1;
-            }
+            nodes += moves[i].size()-1;
         }
         return (u64)nodes;
     }

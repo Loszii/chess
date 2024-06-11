@@ -303,8 +303,8 @@ Board Game::update_board(int start_pos, int end_pos) {
         board.w_check = under_attack(board.w_king_pos, ally_moves);
         board.b_check = under_attack(board.b_king_pos, enemy_moves);
     }
-
-    check_castle(enemy_moves); //maybe make this update both players instead of just current
+    check_castle(board.w_turn, enemy_moves);
+    check_castle(!board.w_turn, ally_moves);
     check_en_passant(start_pos, end_pos);
     return old_board;
 }
@@ -856,6 +856,7 @@ std::vector<int> Game::get_trajectory(int pos) {
     //returns all possible indices to move, legal or not
 
     std::vector<int> result;
+    result.reserve(27); //27 max queen moves, this will prevent copying
     int piece = board.data[pos];
 
     if (piece == 1 || piece == -1) {
@@ -897,6 +898,7 @@ void Game::get_trajectory(int pos, std::vector<int>& result) {
 std::vector<int> Game::get_all_trajectories() {
     //returns all trajectories of the players to move pieces
     std::vector<int> result;
+    result.reserve(100); //to prevent copying
 
     for (int i=0; i < 64; i++) {
         if ((board.w_turn && board.data[i] > 0) || (!board.w_turn && board.data[i] < 0)) { //determines black or white side
@@ -910,6 +912,7 @@ std::vector<int> Game::get_all_trajectories() {
 std::vector<int> Game::get_all_trajectories(bool w_turn) {
     //returns all trajectories of the players to move pieces
     std::vector<int> result;
+    result.reserve(100); //to prevent copying
 
     for (int i=0; i < 64; i++) {
         if ((w_turn && board.data[i] > 0) || (!w_turn && board.data[i] < 0)) { //determines black or white side
@@ -923,6 +926,7 @@ std::vector<int> Game::get_all_trajectories(bool w_turn) {
 std::vector<int> Game::get_legal_moves(int pos) {
     //uses board in parameter
     std::vector<int> result;
+    result.reserve(100);
     std::vector<int> all_moves = get_trajectory(pos);
     bool w_turn; //duplicate variable since will change after updating
     if (board.w_turn) {
@@ -944,6 +948,7 @@ std::vector<std::vector<int>> Game::get_all_legal_moves() {
     //returns an array of arrays, with the first element being the position of piece and the rest its available moves
     //will return all legal moves of whoevers turn it is
     std::vector<std::vector<int>> result;
+    result.reserve(16); //num of max pieces
 
     for (int i=0; i < 64; i++) {
         if ((board.w_turn && board.data[i] > 0) || (!board.w_turn && board.data[i] < 0)) { //determines black or white side
@@ -961,10 +966,10 @@ std::vector<std::vector<int>> Game::get_all_legal_moves() {
     return result;
 }
 
-void Game::check_castle(const std::vector<int>& enemy_moves) {
+void Game::check_castle(bool w_turn, const std::vector<int>& enemy_moves) {
     //updates castle array for player to move, returns old array
     std::array<bool, 4>* castle;
-    if (board.w_turn) {
+    if (w_turn) {
         castle = &board.w_castle;
     } else {
         castle = &board.b_castle;
@@ -973,7 +978,7 @@ void Game::check_castle(const std::vector<int>& enemy_moves) {
     //perms
     int king; //pos of king
     int side;
-    if (board.w_turn) {
+    if (w_turn) {
         side = 1;
         king = 60;
     } else {
@@ -992,54 +997,56 @@ void Game::check_castle(const std::vector<int>& enemy_moves) {
     }
 
     //temps
-    (*castle)[0] = true;
-    (*castle)[2] = true;
+    if ((*castle)[1] || (*castle)[3]) { //one of perms has to be true to bother with temps
+        (*castle)[0] = true;
+        (*castle)[2] = true;
 
-    if (board.data[king+1] != 0 || board.data[king+2] != 0) { //piece in the way
-        (*castle)[0] = false;
-    }
-    if (board.data[king-3] != 0 || board.data[king-2] != 0 || board.data[king-1] != 0) {
-        (*castle)[2] = false;
-    }
-
-    //since checking if empty square is under attack must consider pawns moving diag (wont show in enemy_moves())
-    //all spots except leftmost will stop castling
-    if (board.w_turn) {
-        if (board.data[52] == -1) {
+        if (board.data[king+1] != 0 || board.data[king+2] != 0) { //piece in the way
             (*castle)[0] = false;
+        }
+        if (board.data[king-3] != 0 || board.data[king-2] != 0 || board.data[king-1] != 0) {
             (*castle)[2] = false;
-        } else {
-            if (board.data[53] == -1 || board.data[54] == -1 || board.data[55] == -1) {
+        }
+
+        //since checking if empty square is under attack must consider pawns moving diag (wont show in enemy_moves())
+        //all spots except leftmost will stop castling
+        if (w_turn) {
+            if (board.data[52] == -1) {
                 (*castle)[0] = false;
+                (*castle)[2] = false;
+            } else {
+                if (board.data[53] == -1 || board.data[54] == -1 || board.data[55] == -1) {
+                    (*castle)[0] = false;
+                }
+                if (board.data[49] == -1 || board.data[50] == -1 || board.data[51] == -1) {
+                    (*castle)[2] = false;
+                }
             }
-            if (board.data[49] == -1 || board.data[50] == -1 || board.data[51] == -1) {
+        } else {
+            if (board.data[12] == 1) {
+                (*castle)[0] = false;
+                (*castle)[2] = false;
+            } else {
+                if (board.data[13] == 1 || board.data[14] == 1 || board.data[15] == 1) {
+                    (*castle)[0] = false;
+                }
+                if (board.data[9] == 1 || board.data[10] == 1 || board.data[11] == 1) {
+                    (*castle)[2] = false;
+                }
+            }
+        }
+
+        if ((*castle)[0] || (*castle)[2]) { //if both are not already both false
+            if (under_attack(king, enemy_moves)) {
+                (*castle)[0] = false;
                 (*castle)[2] = false;
             }
-        }
-    } else {
-        if (board.data[12] == 1) {
-            (*castle)[0] = false;
-            (*castle)[2] = false;
-        } else {
-            if (board.data[13] == 1 || board.data[14] == 1 || board.data[15] == 1) {
+            if (under_attack(king+1, enemy_moves) || under_attack(king+2, enemy_moves)) {
                 (*castle)[0] = false;
-            }
-            if (board.data[9] == 1 || board.data[10] == 1 || board.data[11] == 1) {
+            } 
+            if (under_attack(king-2, enemy_moves) || under_attack(king-1, enemy_moves)) {
                 (*castle)[2] = false;
             }
-        }
-    }
-
-    if ((*castle)[0] || (*castle)[2]) { //if both are not already both false
-        if (under_attack(king, enemy_moves)) {
-            (*castle)[0] = false;
-            (*castle)[2] = false;
-        }
-        if (under_attack(king+1, enemy_moves) || under_attack(king+2, enemy_moves)) {
-            (*castle)[0] = false;
-        } 
-        if (under_attack(king-2, enemy_moves) || under_attack(king-1, enemy_moves)) {
-            (*castle)[2] = false;
         }
     }
 }

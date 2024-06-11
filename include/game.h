@@ -78,7 +78,7 @@ class Game {
         void undo_hash_board();
         //movement
         void move_piece(int start_pos, int end_pos);
-        void check_castle(const std::vector<int>& enemy_moves);
+        void check_castle(bool w_turn, const std::vector<int>& enemy_moves);
         void check_en_passant(int start_pos, int end_pos);
         void get_pawn_moves(int pos, std::vector<int>& result);
         void get_bishop_moves(int pos, std::vector<int>& result);
