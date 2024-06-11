@@ -9,8 +9,17 @@
 
 //3 move repition faulty regarding updating castling only when it is a players move to go. maybe fix
 
-//all positions in this program are of form i*10 + j
+//board represented as array, squares range from [0, 63]
 
+//instead of copying board to undo move just move the piece back, and copy castle values ect.
+
+//make moves append to a parameter, will speed up functions, make all trajectories pass them all the same one
+//to speed up castling only check temps if perms are true
+
+//make check for selection legal_moves and swap side of board again when everything is fixed
+
+
+//bishops on side cant move
 
 const int SCREEN_WIDTH = 784;
 const int SCREEN_HEIGHT = 784;
@@ -42,7 +51,13 @@ int main() {
                     }
                 }
             } else {
-                game.engine_move();
+                if (IsMouseButtonPressed(0)) {
+                    int pos = game.get_index(GetMouseX(), GetMouseY());
+                    if (pos != -1) {
+                        game.select_move(pos);
+                    }
+                }
+                //game.engine_move();
             }
         } else if (game.is_promoting != -1) {
             //check if mouse selects a piece to promote, then calls apply_prom(is_promoting + pieceval*100)

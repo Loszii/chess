@@ -7,64 +7,6 @@
 #include "game.h"
 #include "raylib.h"
 
-Game::Game() {
-
-    //player turn random
-    std::random_device rd;
-    std::mt19937 gen(rd());
-    std::uniform_int_distribution<> distr(0, 1);
-    int num = distr(gen);
-    if (num == 0) {
-        player_turn = false;
-    } else {
-        player_turn = true;
-    }
-
-
-    board_texture = LoadTexture("../res/board.png");
-    select_texture = LoadTexture("../res/selector.png");
-
-    //skins
-    skins[1] = LoadTexture("../res/w-pawn.png");
-    skins[2] = LoadTexture("../res/w-bishop.png");
-    skins[3] = LoadTexture("../res/w-knight.png");
-    skins[4] = LoadTexture("../res/w-rook.png");
-    skins[5] = LoadTexture("../res/w-queen.png");
-    skins[6] = LoadTexture("../res/w-king.png");
-    skins[-1] = LoadTexture("../res/b-pawn.png");
-    skins[-2] = LoadTexture("../res/b-bishop.png");
-    skins[-3] = LoadTexture("../res/b-knight.png");
-    skins[-4] = LoadTexture("../res/b-rook.png");
-    skins[-5] = LoadTexture("../res/b-queen.png");
-    skins[-6] = LoadTexture("../res/b-king.png");
-
-    //coord
-    int x;
-    int y;
-    if (player_turn) {
-        for (int i=0; i < 80; i += 10) {
-            x = BEVEL;
-            y = BEVEL + ((i/10) * SQUARE_WIDTH);
-            for (int j=0; j < 8; j++) {
-                coord[i+j] = std::make_tuple(x, y);
-                x += SQUARE_WIDTH;
-            }
-        }
-    } else { //player is playing as black so flip
-        for (int i=0; i < 8; i++) {
-            x = BEVEL;
-            y = BEVEL + ((i) * SQUARE_WIDTH);
-            for (int j=0; j < 8; j++) {
-                coord[10*(7-i)+(7-j)] = std::make_tuple(x, y);
-                x += SQUARE_WIDTH;
-            }
-        }
-    }
-
-    //hashing first board
-    history[board] = 1;
-}
-
 Game::Game(bool textures) {
     if (textures) {
         board_texture = LoadTexture("../res/board.png");
@@ -97,24 +39,33 @@ Game::Game(bool textures) {
     }
 
     //coord
-    int x;
-    int y;
+    int x = BEVEL;
+    int y = BEVEL;
     if (player_turn) {
-        for (int i=0; i < 80; i += 10) {
-            x = BEVEL;
-            y = BEVEL + ((i/10) * SQUARE_WIDTH);
-            for (int j=0; j < 8; j++) {
-                coord[i+j] = std::make_tuple(x, y);
-                x += SQUARE_WIDTH;
+        for (int i=0; i < 64; i ++) {
+            coord[i] = std::make_tuple(x, y);
+            x += SQUARE_WIDTH;
+            if (x == SCREEN_WIDTH - BEVEL) {
+                x = BEVEL;
+                y += SQUARE_WIDTH;
             }
         }
     } else { //flipped
-        for (int i=0; i < 8; i++) {
-            x = BEVEL;
-            y = BEVEL + ((i) * SQUARE_WIDTH);
-            for (int j=0; j < 8; j++) {
-                coord[10*(7-i)+(7-j)] = std::make_tuple(x, y);
-                x += SQUARE_WIDTH;
+        /*
+        for (int i=0; i < 64; i ++) {
+            coord[63-i] = std::make_tuple(x, y);
+            x += SQUARE_WIDTH;
+            if (x == SCREEN_WIDTH - BEVEL) {
+                x = BEVEL;
+                y += SQUARE_WIDTH;
+            }
+        }*/
+        for (int i=0; i < 64; i ++) {
+            coord[i] = std::make_tuple(x, y);
+            x += SQUARE_WIDTH;
+            if (x == SCREEN_WIDTH - BEVEL) {
+                x = BEVEL;
+                y += SQUARE_WIDTH;
             }
         }
     }
@@ -127,14 +78,11 @@ void Game::draw_game() {
     DrawTexture(board_texture, 0, 0, WHITE); //board
     int x;
     int y;
-    for (int i=0; i < 80; i += 10) {
-        for (int j=0; j < 8; j++) {
-            if (board.data[i/10][j] != 0) {
-                int ind = i + j;
-                x = std::get<0>(coord[ind]);
-                y = std::get<1>(coord[ind]);
-                DrawTextureEx(skins[board.data[i/10][j]], (Vector2){(float)x, (float)y}, 0, SCALE, WHITE); //pieces
-            }
+    for (int i=0; i < 64; i ++) {
+        if (board.data[i] != 0) {
+            x = std::get<0>(coord[i]);
+            y = std::get<1>(coord[i]);
+            DrawTextureEx(skins[board.data[i]], (Vector2){(float)x, (float)y}, 0, SCALE, WHITE); //pieces
         }
     }
 
@@ -275,9 +223,7 @@ void Game::select_move(int pos) {
 
 void Game::check_for_selection(int pos) {
     //checks if there is a piece to select at given pos, if so sets select to true, select_pos to pos, sets moves to all moves of that piece
-    int i = pos/10;
-    int j = pos % 10;
-    if ((board.w_turn && board.data[i][j] > 0) || (!board.w_turn && board.data[i][j] < 0)) { //pos num 0-100 representing 2d array indices
+    if ((board.w_turn && board.data[pos] > 0) || (!board.w_turn && board.data[pos] < 0)) { //pos num 0-100 representing 2d array indices
         //below code runs if there is a move to select
         select = true;
         select_pos = pos;
@@ -290,16 +236,20 @@ void Game::check_for_selection(int pos) {
 
 int Game::get_index(int x, int y) {
     //takes in mouse x and y pos and returns i*10 + j position
-    int i = x - BEVEL;
-    i = i / SQUARE_WIDTH;
-    int j = y - BEVEL;
-    j = j / SQUARE_WIDTH;
-    if (i >= 0 && i <= 7 && j >= 0 && j <= 7) {
+    int pos;
+    y -= BEVEL;
+    y = y / SQUARE_WIDTH;
+    x -= BEVEL;
+    x = x / SQUARE_WIDTH;
+    pos = y*8 + x;
+    if (pos >= 0 && pos <= 63) {
+        /*
         if (player_turn && board.w_turn) {
-            return 10*j + i;
+            return pos;
         } else { //swap for black player
-            return 10*(7-j) + (7-i);
-        }
+            return 63 - pos;
+        }*/
+        return pos;
     } else {
         return -1; //cannot find index
     }
@@ -351,11 +301,9 @@ bool Game::under_attack(int pos, std::vector<int> enemy_moves) {
 
 int Game::get_piece_pos(int piece) {
     //returns first occurance of piece within the current board, -1 if none
-    for (int i=0; i < 8; i++) {
-        for (int j=0; j < 8; j++) {
-            if (board.data[i][j] == piece) {
-                return i*10 + j;
-            }
+    for (int i=0; i < 64; i++) {
+        if (board.data[i] == piece) {
+            return i;
         }
     }
     return -1;
@@ -423,9 +371,9 @@ std::unordered_map<int, int> Game::get_material() {
         }
     }
     //count em
-    for (int i=0; i < (int)board.data.size(); i++) {
-        for (int j=0; j < (int)board.data[i].size(); j++) {
-            result[board.data[i][j]] += 1;
+    for (int i=0; i < 64; i++) {
+        if (board.data[i] != 0) {
+            result[board.data[i]] += 1;
         }
     }
     return result;
@@ -453,17 +401,15 @@ void Game::undo_hash_board() {
 void Game::move_piece(int start_pos, int end_pos) {
     //given a start pos and end pos, moves piece at start to end position
     //this function handles en passant, castling, and promotions
-    int i = start_pos/10;
-    int j = start_pos%10;
 
     if (end_pos >= 100) { //promotion
-        board.data[start_pos/10][start_pos%10] = 0;
+        board.data[start_pos] = 0;
         int chopped_pos = end_pos % 100;
         int new_piece = end_pos / 100;
         if (!board.w_turn) {
             new_piece *= -1;
         }
-        board.data[chopped_pos/10][chopped_pos%10] = new_piece;
+        board.data[chopped_pos] = new_piece;
         return;
     }
 
@@ -471,11 +417,11 @@ void Game::move_piece(int start_pos, int end_pos) {
     int row;
     int side;
     bool check_castle = false;
-    if (board.data[i][j] == 6) { //is king
-        row = 70;
+    if (board.data[start_pos] == 6) { //is king
+        row = 56;
         side = 1;
         check_castle = true;
-    } else if (board.data[i][j] == -6) {
+    } else if (board.data[start_pos] == -6) {
         row = 0;
         side = -1;
         check_castle = true;
@@ -483,404 +429,476 @@ void Game::move_piece(int start_pos, int end_pos) {
     if (check_castle) {
         if (start_pos == row + 4 && end_pos == row + 6) {
             //right castle so move rook
-            board.data[row/10][5] = side * 4;
-            board.data[row/10][7] = 0;
+            board.data[row+5] = side * 4;
+            board.data[row+7] = 0;
         } else if (start_pos == row + 4 && end_pos == row + 2) {
             //left castle so move rook
-            board.data[row/10][3] = side * 4;
-            board.data[row/10][0] = 0;
+            board.data[row+3] = side * 4;
+            board.data[row] = 0;
         }
     }
 
     //en passant
     //if pawn moving diagonal and square is empty then delete the pawn below
-    int dir;
-    int u_bound;
-    bool check_en_passant = false;
-    if (board.data[i][j] == 1) { //white pawn
-        dir = -1;
-        u_bound = 0;
-        check_en_passant = true;
-    } else if (board.data[i][j] == -1) {
-        dir = 1;
-        u_bound = 7;
-        check_en_passant = true;
-    }
-    if (check_en_passant) {
-        if (i != u_bound) { //diags
-            if (j > 0) {
-                if (end_pos == (i+dir)*10 + (j-1) && board.data[i+dir][j-1] == 0) {
-                    board.data[end_pos/10 - dir][end_pos%10] = 0;
-                }
+    if (board.data[start_pos] == 1 || board.data[start_pos] == -1) {
+        if (end_pos - start_pos == 7 || end_pos - start_pos == 9) { //black
+            if (board.data[end_pos] == 0) {
+                board.data[end_pos - 8] = 0;
             }
-            if (j < 7) {
-                if (end_pos == (i+dir)*10 + j+1 && board.data[i+dir][j+1] == 0) {
-                    board.data[end_pos/10 - dir][end_pos%10] = 0;
-                }
+        } else if (end_pos - start_pos == -7 || end_pos - start_pos == -9) {
+            if (board.data[end_pos] == 0) {
+                board.data[end_pos + 8] = 0;
             }
         }
     }
 
     //actually move piece
-    board.data[end_pos/10][end_pos%10] = board.data[start_pos/10][start_pos%10];
-    board.data[start_pos/10][start_pos%10] = 0;
+    board.data[end_pos] = board.data[start_pos];
+    board.data[start_pos] = 0;
 }
 
-std::vector<int> Game::get_pawn_moves(int i, int j) {
+std::vector<int> Game::get_pawn_moves(int pos) {
 
     //to do, if can promote append 2pos, 3pos, 4pos, 5pos for all different pieces that can promote too
 
     std::vector<int> result;
     bool w_turn; //must have local turn since we can be checking enemy pawn moves
-    int u_bound;
-    int dir;
-    int start_row;
-    int side;
-    if (board.data[i][j] > 0) {
-        w_turn = true;
-        u_bound = 0;
-        dir = -1;
-        start_row = 6;
-    } else {
-        w_turn = false;
-        u_bound = 7;
-        dir = 1;
-        start_row = 1;
-    }
-
     //promotion checks
     bool will_promote = false;
-    if ((w_turn && i == 1) || (!w_turn && i == 6)) {
-        will_promote = true;
-    }
-
-    //for below if it will promote we add all the possible promotion pieces in the hundreds place
-    if (i == start_row && board.data[i+dir][j] == 0 && board.data[i+(2*dir)][j] == 0) {//straight
-        result.push_back(((i+dir)*10)+j);
-        result.push_back(((i+(2*dir))*10)+j);
-    } else if (i != u_bound && board.data[i+dir][j] == 0) {
-        if (will_promote) {
-            for (int p=200; p < 600; p += 100) {
-                result.push_back(p + ((i+dir)*10)+j);
-            }
-        } else {
-            result.push_back(((i+dir)*10)+j);
+    if (board.data[pos] > 0) { //whites turn
+        if (pos >= 8 && pos <= 15) {
+            will_promote = true;
+        }
+        //straight squares
+        if (board.data[pos - 8] == 0) {
+            result.push_back(pos-8);
+        }
+        if (pos >= 48 && pos <= 55 && board.data[pos-8] == 0 && board.data[pos-16] == 0) { //add extra
+            result.push_back(pos-16);
+        }
+        //diagonal
+        if ((pos-7) % 8 != 0 && board.data[pos-7] < 0) {
+            result.push_back(pos-7);
+        }
+        if (pos % 8 != 0 && board.data[pos-9] < 0) {
+            result.push_back(pos-9);
+        }
+        //en passant
+        if ((pos - 7 == board.en_passant || pos - 9 == board.en_passant) && pos >= 24 && pos <= 31) {
+            result.push_back(board.en_passant);
+        }
+    } else {
+        if (pos >= 48 && pos <= 55) {
+            will_promote = true;
+        }
+        //straight squares
+        if (board.data[pos + 8] == 0) {
+            result.push_back(pos+8);
+        }
+        if (pos >= 8 && pos <= 15 && board.data[pos+8] == 0 && board.data[pos+16] == 0) { //add extra
+            result.push_back(pos+16);
+        }
+        //diagonal
+        if (pos % 8 != 0 && board.data[pos+7] > 0) {
+            result.push_back(pos+7);
+        }
+        if ((pos-7) % 8 != 0 && board.data[pos+9] > 0) {
+            result.push_back(pos+9);
+        }
+        //en passant
+        if ((pos + 7 == board.en_passant || pos + 9 == board.en_passant) && pos >= 32 && pos <= 39) {
+            result.push_back(board.en_passant);
         }
     }
-    if (i != u_bound) { //diags
-        if (j > 0) {
-            if ((w_turn && board.data[i+dir][j-1] < 0) || (!w_turn && board.data[i+dir][j-1] > 0)) {
-                if (will_promote) {
-                    for (int p=200; p < 600; p += 100) {
-                        result.push_back(p + (i+dir)*10 + (j-1));
-                    }
-                } else {
-                    result.push_back((i+dir)*10 + (j-1));
-                }
+    //if will promote loop through all promotion
+    if (will_promote) {
+        std::vector<int> promotion_result;
+        for (int i=0; i < (int)result.size(); i++) {
+            int pos = result[i];
+            promotion_result.push_back(200 + pos); //bishop
+            promotion_result.push_back(300 + pos);
+            promotion_result.push_back(400 + pos);
+            promotion_result.push_back(500 + pos);
+        }
+        return promotion_result;
+    } else {
+        return result;
+    }
+}
+
+std::vector<int> Game::get_bishop_moves(int pos) {
+    std::vector<int> result;
+    bool w_turn;
+    if (board.data[pos] > 0) {
+        w_turn = true;
+    } else {
+        w_turn = false;
+    }
+    int temp;
+    //left side
+    if (pos % 8 != 0) {
+        //upper left (pos - 9)
+        temp = pos - 9;
+        while (temp >= 0 && (temp-7) % 8 != 0) {
+            if (board.data[temp] == 0) {
+                result.push_back(temp);
+            } else if ((w_turn && board.data[temp] < 0) || (!w_turn && board.data[temp] > 0)) {
+                result.push_back(temp);
+                break;
             } else {
-                //en passant
-                if (w_turn && ((i+dir)*10 + (j-1) == board.en_passant) && board.en_passant/10 == 2) {
-                    result.push_back((i+dir)*10 + (j-1));
-                } else if (!w_turn && ((i+dir)*10 + (j-1) == board.en_passant) && board.en_passant/10 == 5) {
-                    result.push_back((i+dir)*10 + (j-1));
-                }
+                break;
             }
+            temp -= 9;
         }
-        if (j < 7) {
-            if ((w_turn && board.data[i+dir][j+1] < 0) || (!w_turn && board.data[i+dir][j+1] > 0)) {
-                if (will_promote) {
-                    for (int p=200; p < 600; p += 100) {
-                        result.push_back(p + (i+dir)*10 + (j+1));
-                    }
-                } else {
-                    result.push_back((i+dir)*10 + (j+1));
-                }
+        //lower left
+        temp = pos + 7;
+        while (temp <= 63 && (temp-7) % 8 != 0) {
+            if (board.data[temp] == 0) {
+                result.push_back(temp);
+            } else if ((w_turn && board.data[temp] < 0) || (!w_turn && board.data[temp] > 0)) {
+                result.push_back(temp);
+                break;
             } else {
-                //en passant
-                if (w_turn && ((i+dir)*10 + (j+1) == board.en_passant) && board.en_passant/10 == 2) {
-                    result.push_back((i+dir)*10 + (j+1));
-                } else if (!w_turn && ((i+dir)*10 + (j+1) == board.en_passant) && board.en_passant/10 == 5) {
-                    result.push_back((i+dir)*10 + (j+1));
-                }
+                break;
+            }
+            temp += 7;
+        }
+    }
+    //right side
+    if ((pos-7) % 8 != 0) {
+        //upper right
+        temp = pos - 7;
+        while (temp >= 0 && temp % 8 != 0) {
+            if (board.data[temp] == 0) {
+                result.push_back(temp);
+            } else if ((w_turn && board.data[temp] < 0) || (!w_turn && board.data[temp] > 0)) {
+                result.push_back(temp);
+                break;
+            } else {
+                break;
+            }
+            temp -= 7;
+        }
+        //lower right
+        temp = pos + 9;
+        while (temp <= 63 && temp % 8 != 0) {
+            if (board.data[temp] == 0) {
+                result.push_back(temp);
+            } else if ((w_turn && board.data[temp] < 0) || (!w_turn && board.data[temp] > 0)) {
+                result.push_back(temp);
+                break;
+            } else {
+                break;
+            }
+            temp += 9;
+        }
+    }
+    return result;
+}
+
+std::vector<int> Game::get_knight_moves(int pos) {
+    std::vector<int> result;
+    bool w_turn;
+    if (board.data[pos] > 0) {
+        w_turn = true;
+    } else {
+        w_turn = false;
+    }
+    //top 2
+    int temp = pos - 16;
+    if (temp >= 0) {
+        if ((temp - 7) % 8 != 0) {
+            if ((w_turn && board.data[temp+1] <= 0) || (!w_turn && board.data[temp+1] >= 0)) {
+                result.push_back(temp+1);
+            }
+        }
+        if (temp % 8 != 0) {
+            if ((w_turn && board.data[temp-1] <= 0) || (!w_turn && board.data[temp-1] >= 0)) {
+                result.push_back(temp-1);
+            }
+        }
+    }
+    //right 2
+    if ((pos-7) % 8 != 0 && (pos - 6) % 8 != 0) {
+        temp = pos + 2;
+        if (temp-8 >= 0) {
+            if ((w_turn && board.data[temp-8] <= 0) || (!w_turn && board.data[temp-8] >= 0)) {
+                result.push_back(temp-8);
+            }
+        }
+        if (temp+8 <= 63) {
+            if ((w_turn && board.data[temp+8] <= 0) || (!w_turn && board.data[temp+8] >= 0)) {
+                result.push_back(temp+8);
+            }
+        }
+    }
+    //bottom 2
+    temp = pos + 16;
+    if (temp <= 63) {
+        if ((temp - 7) % 8 != 0) {
+            if ((w_turn && board.data[temp+1] <= 0) || (!w_turn && board.data[temp+1] >= 0)) {
+                result.push_back(temp+1);
+            }
+        }
+        if (temp % 8 != 0) {
+            if ((w_turn && board.data[temp-1] <= 0) || (!w_turn && board.data[temp-1] >= 0)) {
+                result.push_back(temp-1);
+            }
+        }
+    }
+    //left 2
+    if (pos % 8 != 0 && (pos - 1) % 8 != 0) {
+        temp = pos - 2;
+        if (temp-8 >= 0) {
+            if ((w_turn && board.data[temp-8] <= 0) || (!w_turn && board.data[temp-8] >= 0)) {
+                result.push_back(temp-8);
+            }
+        }
+        if (temp+8 <= 63) {
+            if ((w_turn && board.data[temp+8] <= 0) || (!w_turn && board.data[temp+8] >= 0)) {
+                result.push_back(temp+8);
             }
         }
     }
     return result;
 }
 
-std::vector<int> Game::get_bishop_moves(int i, int j) {
+std::vector<int> Game::get_rook_moves(int pos) {
     std::vector<int> result;
     bool w_turn;
-    if (board.data[i][j] > 0) {
+    if (board.data[pos] > 0) {
         w_turn = true;
     } else {
         w_turn = false;
     }
-    for (int k=1; k < j+1; k++) { //upper left
-        if (i-k < 0) {
-            break;
-        }
-        if (board.data[i-k][j-k] == 0) {
-            result.push_back((i-k)*10 + (j-k));
-        } else if ((w_turn && board.data[i-k][j-k] < 0) || (!w_turn && board.data[i-k][j-k] > 0)) { //piece there so break after
-            result.push_back((i-k)*10 + (j-k));
+    //top col
+    int temp = pos - 8;
+    while (temp >= 0) {
+        if (board.data[temp] == 0) {
+            result.push_back(temp);
+        } else if ((w_turn && board.data[temp] < 0) || (!w_turn && board.data[temp] > 0)) {
+            result.push_back(temp);
             break;
         } else {
-            break; //hit own piece so break
+            break;
+        }
+        temp -= 8;
+    }
+    //bottom col
+    temp = pos + 8;
+    while (temp <= 63) {
+        if (board.data[temp] == 0) {
+            result.push_back(temp);
+        } else if ((w_turn && board.data[temp] < 0) || (!w_turn && board.data[temp] > 0)) {
+            result.push_back(temp);
+            break;
+        } else {
+            break;
+        }
+        temp += 8;
+    }
+    //right row
+    if ((pos - 7) % 8 != 0) {
+        temp = pos + 1;
+        while (temp % 8 != 0) {
+            if (board.data[temp] == 0) {
+                result.push_back(temp);
+            } else if ((w_turn && board.data[temp] < 0) || (!w_turn && board.data[temp] > 0)) {
+                result.push_back(temp);
+                break;
+            } else {
+                break;
+            }
+            temp += 1;
         }
     }
-    for (int k=1; k < j+1; k++) { //lower left
-        if (i+k > 7) {
-            break;
-        }
-        if (board.data[i+k][j-k] == 0) {
-            result.push_back((i+k)*10 + (j-k));
-        } else if ((w_turn && board.data[i+k][j-k] < 0) || (!w_turn && board.data[i+k][j-k] > 0)) { 
-            result.push_back((i+k)*10 + (j-k));
-            break;
-        } else {
-            break;
-        }
-    }
-    for (int k=1; k < (7-j)+1; k++) { //upper right
-        if (i-k < 0) { //off screen
-            break;
-        }
-        if (board.data[i-k][j+k] == 0) {
-            result.push_back((i-k)*10 + (j+k));
-        } else if ((w_turn && board.data[i-k][j+k] < 0) || (!w_turn && board.data[i-k][j+k] > 0)) { 
-            result.push_back((i-k)*10 + (j+k));
-            break;
-        } else {
-            break;
-        }
-    }
-    for (int k=1; k < (7-j)+1; k++) { //lower right
-        if (i+k > 7) { //off screen
-            break;
-        }
-        if (board.data[i+k][j+k] == 0) {
-            result.push_back((i+k)*10 + (j+k));
-        } else if ((w_turn && board.data[i+k][j+k] < 0) || (!w_turn && board.data[i+k][j+k] > 0)) { 
-            result.push_back((i+k)*10 + (j+k));
-            break;
-        } else {
-            break;
+    //left row
+    if (pos % 8 != 0) {
+        temp = pos - 1;
+        while ((temp-7) % 8 != 0) {
+            if (board.data[temp] == 0) {
+                result.push_back(temp);
+            } else if ((w_turn && board.data[temp] < 0) || (!w_turn && board.data[temp] > 0)) {
+                result.push_back(temp);
+                break;
+            } else {
+                break;
+            }
+            temp -= 1;
         }
     }
     return result;
 }
 
-std::vector<int> Game::get_knight_moves(int i, int j) {
+std::vector<int> Game::get_queen_moves(int pos) {
     std::vector<int> result;
-    bool w_turn;
-    if (board.data[i][j] > 0) {
-        w_turn = true;
-    } else {
-        w_turn = false;
-    }
-    if (i > 1) {//top 2
-        if (j > 0 && ((w_turn && board.data[i-2][j-1] <= 0) || (!w_turn && board.data[i-2][j-1] >= 0))) {
-            result.push_back((i-2)*10 + (j-1));
-        }
-        if (j < 7 && ((w_turn && board.data[i-2][j+1] <= 0) || (!w_turn && board.data[i-2][j+1] >= 0))) {
-            result.push_back((i-2)*10 + (j+1));
-        }
-    }
-    if (j < 6) {//right 2
-        if (i > 0 && ((w_turn && board.data[i-1][j+2] <= 0) || (!w_turn && board.data[i-1][j+2] >= 0))) {
-            result.push_back((i-1)*10 + (j+2));
-        }
-        if (i < 7 && ((w_turn && board.data[i+1][j+2] <= 0) || (!w_turn &&  board.data[i+1][j+2] >= 0))) {
-            result.push_back((i+1)*10 + (j+2));
-        }
-    }
-    if (i < 6) {//bottom 2
-        if (j > 0 && ((w_turn && board.data[i+2][j-1] <= 0) || (!w_turn &&  board.data[i+2][j-1] >= 0))) {
-            result.push_back((i+2)*10 + (j-1));
-        }
-        if (j < 7 && ((w_turn && board.data[i+2][j+1] <= 0) || (!w_turn &&  board.data[i+2][j+1] >= 0))) {
-            result.push_back((i+2)*10 + (j+1));
-        }
-    }
-    if (j > 1) {//left 2
-        if (i > 0 && ((w_turn && board.data[i-1][j-2] <= 0) || (!w_turn &&  board.data[i-1][j-2] >= 0))) {
-            result.push_back((i-1)*10 + (j-2));
-        }
-        if (i < 7 && ((w_turn && board.data[i+1][j-2] <= 0) || (!w_turn &&  board.data[i+1][j-2] >= 0))) {
-            result.push_back((i+1)*10 + (j-2));
-        }
-    }
-    return result;
-}
-
-std::vector<int> Game::get_rook_moves(int i, int j) {
-    std::vector<int> result;
-    bool w_turn;
-    if (board.data[i][j] > 0) {
-        w_turn = true;
-    } else {
-        w_turn = false;
-    }
-    for (int k=1; k < i+1; k++) { //top col
-        if (board.data[i-k][j] == 0) {
-            result.push_back((i-k)*10 + j);
-        } else if ((w_turn && board.data[i-k][j] < 0) || (!w_turn && board.data[i-k][j] > 0)) {
-            result.push_back((i-k)*10 + j);
-            break;
-        } else {
-            break;
-        }
-    }
-    for (int k=1; k < (7-j)+1; k++) { //right col
-        if (board.data[i][j+k] == 0) {
-            result.push_back(i*10 + (j+k));
-        } else if ((w_turn && board.data[i][j+k] < 0) || (!w_turn && board.data[i][j+k] > 0)) {
-            result.push_back(i*10 + (j+k));
-            break;
-        } else {
-            break;
-        }
-    }
-    for (int k=1; k < (7-i)+1; k++) { //bottom col
-        if (board.data[i+k][j] == 0) {
-            result.push_back((i+k)*10 + j);
-        } else if ((w_turn && board.data[i+k][j] < 0) || (!w_turn && board.data[i+k][j] > 0)) {
-            result.push_back((i+k)*10 + j);
-            break;
-        } else {
-            break;
-        }
-    }
-    for (int k=1; k < j+1; k++) { //left col
-        if (board.data[i][j-k] == 0) {
-            result.push_back(i*10 + (j-k));
-        } else if ((w_turn && board.data[i][j-k] < 0) || (!w_turn && board.data[i][j-k] > 0)) {
-            result.push_back(i*10 + (j-k));
-            break;
-        } else {
-            break;
-        }
-    }
-    return result;
-}
-
-std::vector<int> Game::get_queen_moves(int i, int j) {
-    std::vector<int> result;
-    std::vector<int> temp = get_bishop_moves(i, j);
+    std::vector<int> temp = get_bishop_moves(pos);
     for (int k=0; k < (int)temp.size(); k++) {
         result.push_back(temp[k]);
     }
-    temp = get_rook_moves(i, j);
+    temp = get_rook_moves(pos);
     for (int k=0; k < (int)temp.size(); k++) {
         result.push_back(temp[k]);
     }
     return result;
 }
 
-std::vector<int> Game::get_king_moves(int i, int j) {
+std::vector<int> Game::get_king_moves(int pos) {
     std::vector<int> result;
     bool w_turn;
-    if (board.data[i][j] > 0) {
+    if (board.data[pos] > 0) {
         w_turn = true;
     } else {
         w_turn = false;
     }
-    if (i != 0) {//top row
-        for (int k=-1; k < 2; k++) { //move left to right
-            if (j+k >= 0 && j+k <= 7 && ((w_turn && board.data[i-1][j+k] <= 0) || (!w_turn && board.data[i-1][j+k] >= 0))) {
-                result.push_back((i-1)*10 + (j+k));
+    int temp;
+    if (pos % 8 == 0) { //on left
+        temp = pos - 8;
+        if (temp >= 0) {
+            if ((w_turn && board.data[temp] <= 0) || (!w_turn && board.data[temp] >= 0)) {
+                result.push_back(temp);
+            }
+            if ((w_turn && board.data[temp+1] <= 0) || (!w_turn && board.data[temp+1] >= 0)) {
+                result.push_back(temp+1);
             }
         }
-    }
-    if (i != 7) {//bottom row
-        for (int k=-1; k < 2; k++) { 
-            if (j+k >= 0 && j+k <= 7 && ((w_turn && board.data[i+1][j+k] <= 0) || (!w_turn && board.data[i+1][j+k] >= 0))) {
-                result.push_back((i+1)*10 + (j+k));
+        temp = pos + 8;
+        if (temp <= 63) {
+            if ((w_turn && board.data[temp] <= 0) || (!w_turn && board.data[temp] >= 0)) {
+                result.push_back(temp);
+            }
+            if ((w_turn && board.data[temp+1] <= 0) || (!w_turn && board.data[temp+1] >= 0)) {
+                result.push_back(temp+1);
             }
         }
+        if ((w_turn && board.data[pos+1] <= 0) || (!w_turn && board.data[pos+1] >= 0)) {
+            result.push_back(pos+1);
+        }
+    } else if ((pos-7) % 8 == 0) { //on right
+        temp = pos - 8;
+        if (temp >= 0) {
+            if ((w_turn && board.data[temp] <= 0) || (!w_turn && board.data[temp] >= 0)) {
+                result.push_back(temp);
+            }
+            if ((w_turn && board.data[temp-1] <= 0) || (!w_turn && board.data[temp-1] >= 0)) {
+                result.push_back(temp-1);
+            }
+        }
+        temp = pos + 8;
+        if (temp <= 63) {
+            if ((w_turn && board.data[temp] <= 0) || (!w_turn && board.data[temp] >= 0)) {
+                result.push_back(temp);
+            }
+            if ((w_turn && board.data[temp-1] <= 0) || (!w_turn && board.data[temp-1] >= 0)) {
+                result.push_back(temp-1);
+            }
+        }
+        if ((w_turn && board.data[pos-1] <= 0) || (!w_turn && board.data[pos-1] >= 0)) {
+            result.push_back(pos-1);
+        }
+    } else { //in center of board
+        temp = pos - 8;
+        if (temp >= 0) {
+            if ((w_turn && board.data[temp] <= 0) || (!w_turn && board.data[temp] >= 0)) {
+                result.push_back(temp);
+            }
+            if ((w_turn && board.data[temp+1] <= 0) || (!w_turn && board.data[temp+1] >= 0)) {
+                result.push_back(temp+1);
+            }
+            if ((w_turn && board.data[temp-1] <= 0) || (!w_turn && board.data[temp-1] >= 0)) {
+                result.push_back(temp-1);
+            }
+        }
+        temp = pos + 8;
+        if (temp <= 63) {
+            if ((w_turn && board.data[temp] <= 0) || (!w_turn && board.data[temp] >= 0)) {
+                result.push_back(temp);
+            }
+            if ((w_turn && board.data[temp+1] <= 0) || (!w_turn && board.data[temp+1] >= 0)) {
+                result.push_back(temp+1);
+            }
+            if ((w_turn && board.data[temp-1] <= 0) || (!w_turn && board.data[temp-1] >= 0)) {
+                result.push_back(temp-1);
+            }
+        }
+        if ((w_turn && board.data[pos+1] <= 0) || (!w_turn && board.data[pos+1] >= 0)) {
+            result.push_back(pos+1);
+        }
+        if ((w_turn && board.data[pos-1] <= 0) || (!w_turn && board.data[pos-1] >= 0)) {
+            result.push_back(pos-1);
+        }
     }
-    if (j < 7 && ((w_turn && board.data[i][j+1] <= 0) || (!w_turn && board.data[i][j+1] >= 0))) {//right square
-        result.push_back(i*10 + (j+1));
-    }
-    if (j > 0 && ((w_turn && board.data[i][j-1] <= 0) || (!w_turn && board.data[i][j-1] >= 0))) {//left square
-        result.push_back(i*10 + (j-1));
-    }
+
     //castling
-    int row;
+    int king;
     std::array<bool, 4> castle;
     if (w_turn) {
-        row = 70;
+        king = 60;
         castle = board.w_castle;
     } else {
-        row = 0;
+        king = 4;
         castle = board.b_castle;
     }
     if (castle[0] && castle[1]) { //right
-        result.push_back(row + 6);
+        result.push_back(king + 2);
     }
     if (castle[2] && castle[3]) { //left
-        result.push_back(row + 2);
+        result.push_back(king - 2);
     }
     return result;
 }
 
 std::vector<int> Game::get_trajectory(int pos) {
     //returns all possible indices to move, legal or not
-    //pos is a index of form i*10 + j
-    //indices will be returned in same form
 
     std::vector<int> result;
-    int i = pos / 10;
-    int j = pos % 10;
-    int piece = board.data[i][j];
+    int piece = board.data[pos];
 
     if (piece == 1 || piece == -1) {
-        result = get_pawn_moves(i, j);
+        result = get_pawn_moves(pos);
     } else if (piece == 2 || piece == -2) {
-        result = get_bishop_moves(i, j);
+        result = get_bishop_moves(pos);
     } else if (piece == 3 || piece == -3) {
-        result = get_knight_moves(i, j);
+        result = get_knight_moves(pos);
     } else if (piece == 4 || piece == -4) {
-        result = get_rook_moves(i, j);
+        result = get_rook_moves(pos);
     } else if (piece == 5 || piece == -5) {
-        result = get_queen_moves(i, j);
+        result = get_queen_moves(pos);
     } else if (piece == 6 || piece == -6) {
-        result = get_king_moves(i, j);
+        result = get_king_moves(pos);
     }
-
     return result;
 }
 
 std::vector<int> Game::get_all_trajectories() {
     //returns all trajectories of the players to move pieces
     std::vector<int> result;
-    for (int i=0; i < 80; i+=10) { //iterate over entire board
-        for (int j=0; j < 8; j++) {
-            if ((board.w_turn && board.data[i/10][j] > 0) || (!board.w_turn && board.data[i/10][j] < 0)) { //determines black or white side
-                std::vector<int> trajectory = get_trajectory(i+j); //get all piece
-                for (int k=0; k < (int)trajectory.size(); k++) {
-                    result.push_back(trajectory[k]); //add to final array
-                }
+
+    for (int i=0; i < 64; i++) {
+        if ((board.w_turn && board.data[i] > 0) || (!board.w_turn && board.data[i] < 0)) { //determines black or white side
+            std::vector<int> trajectory = get_trajectory(i); //get all piece
+            for (int k=0; k < (int)trajectory.size(); k++) {
+                result.push_back(trajectory[k]); //add to final array
             }
         }
     }
+
     return result;
 }
 
 std::vector<int> Game::get_all_trajectories(bool w_turn) {
-    //returns all trajectories the specified player
+    //returns all trajectories of the players to move pieces
     std::vector<int> result;
-    for (int i=0; i < 80; i+=10) { //iterate over entire board
-        for (int j=0; j < 8; j++) {
-            if ((w_turn && board.data[i/10][j] > 0) || (!w_turn && board.data[i/10][j] < 0)) { //determines black or white side
-                std::vector<int> trajectory = get_trajectory(i+j); //get all piece
-                for (int k=0; k < (int)trajectory.size(); k++) {
-                    result.push_back(trajectory[k]); //add to final array
-                }
+
+    for (int i=0; i < 64; i++) {
+        if ((w_turn && board.data[i] > 0) || (!w_turn && board.data[i] < 0)) { //determines black or white side
+            std::vector<int> trajectory = get_trajectory(i); //get all piece
+            for (int k=0; k < (int)trajectory.size(); k++) {
+                result.push_back(trajectory[k]); //add to final array
             }
         }
     }
+    
     return result;
 }
 
@@ -910,18 +928,17 @@ std::vector<std::vector<int>> Game::get_all_legal_moves() {
     //returns an array of arrays, with the first element being the position of piece and the rest its available moves
     //will return all legal moves of whoevers turn it is
     std::vector<std::vector<int>> result;
-    for (int i=0; i < 80; i+=10) { //iterate over entire board
-        for (int j=0; j < 8; j++) {
-            if ((board.w_turn && board.data[i/10][j] > 0) || (!board.w_turn && board.data[i/10][j] < 0)) { //determines black or white side
-                std::vector<int> legal_moves = get_legal_moves(i+j); //get all piece
-                std::vector<int> temp; //temp to prepend position to
-                if (!legal_moves.empty()) {
-                    temp.push_back(i+j); //add piece in front
-                    for (int k=0; k < (int)legal_moves.size(); k++) {
-                        temp.push_back(legal_moves[k]); //add to final array
-                    }
-                    result.push_back(temp);
+
+    for (int i=0; i < 64; i++) {
+        if ((board.w_turn && board.data[i] > 0) || (!board.w_turn && board.data[i] < 0)) { //determines black or white side
+            std::vector<int> legal_moves = get_legal_moves(i); //get all piece
+            std::vector<int> temp; //temp to prepend position to
+            if (!legal_moves.empty()) {
+                temp.push_back(i); //add piece in front
+                for (int k=0; k < (int)legal_moves.size(); k++) {
+                    temp.push_back(legal_moves[k]); //add to final array
                 }
+                result.push_back(temp);
             }
         }
     }
@@ -938,23 +955,23 @@ void Game::check_castle(std::vector<int> enemy_moves) {
     }
     //white
     //perms
-    int row;
+    int king; //pos of king
     int side;
     if (board.w_turn) {
         side = 1;
-        row = 7;
+        king = 60;
     } else {
         side = -1;
-        row = 0;
+        king = 4;
     }
-    if (board.data[row][4] != side * 6) { //king moved, all perm become false, dont undo these
+    if (board.data[king] != side * 6) { //king moved, all perm become false, dont undo these
         (*castle)[1] = false;
         (*castle)[3] = false;
     }
-    if (board.data[row][7] != side * 4) { //right rook
+    if (board.data[king+3] != side * 4) { //right rook
         (*castle)[1] = false;
     }
-    if (board.data[row][0] != side * 4) { //left rook
+    if (board.data[king-4] != side * 4) { //left rook
         (*castle)[3] = false;
     }
 
@@ -962,42 +979,50 @@ void Game::check_castle(std::vector<int> enemy_moves) {
     (*castle)[0] = true;
     (*castle)[2] = true;
 
-    if (board.data[row][5] != 0 || board.data[row][6] != 0) { //piece in the way
+    if (board.data[king+1] != 0 || board.data[king+2] != 0) { //piece in the way
         (*castle)[0] = false;
     }
-    if (board.data[row][1] != 0 || board.data[row][2] != 0 || board.data[row][3] != 0) {
+    if (board.data[king-3] != 0 || board.data[king-2] != 0 || board.data[king-1] != 0) {
         (*castle)[2] = false;
     }
 
     //since checking if empty square is under attack must consider pawns moving diag (wont show in enemy_moves())
     //all spots except leftmost will stop castling
-    for (int p=1; p < 3; p++) {
-        if ((board.w_turn && board.data[row-1][p] == -1) || (!board.w_turn && board.data[row+1][p] == 1)) {
-            (*castle)[2] = false;
-        }
-    }
-    for (int p=3; p < 6; p++) {
-        if ((board.w_turn && board.data[row-1][p] == -1) || (!board.w_turn && board.data[row+1][p] == 1)) {
+    if (board.w_turn) {
+        if (board.data[52] == -1) {
             (*castle)[0] = false;
             (*castle)[2] = false;
+        } else {
+            if (board.data[53] == -1 || board.data[54] == -1 || board.data[55] == -1) {
+                (*castle)[0] = false;
+            }
+            if (board.data[49] == -1 || board.data[50] == -1 || board.data[51] == -1) {
+                (*castle)[2] = false;
+            }
         }
-    }
-    for (int p=6; p < 8; p++) {
-        if ((board.w_turn && board.data[row-1][p] == -1) || (!board.w_turn && board.data[row+1][p] == 1)) {
+    } else {
+        if (board.data[12] == 1) {
             (*castle)[0] = false;
+            (*castle)[2] = false;
+        } else {
+            if (board.data[13] == 1 || board.data[14] == 1 || board.data[15] == 1) {
+                (*castle)[0] = false;
+            }
+            if (board.data[9] == 1 || board.data[10] == 1 || board.data[11] == 1) {
+                (*castle)[2] = false;
+            }
         }
     }
-
 
     if ((*castle)[0] || (*castle)[2]) { //if both are not already both false
-        if (under_attack((10*row) + 4, enemy_moves)) {
+        if (under_attack(king, enemy_moves)) {
             (*castle)[0] = false;
             (*castle)[2] = false;
         }
-        if (under_attack((10*row) + 5, enemy_moves) || under_attack((10*row) + 6, enemy_moves)) {
+        if (under_attack(king+1, enemy_moves) || under_attack(king+2, enemy_moves)) {
             (*castle)[0] = false;
         } 
-        if (under_attack((10*row) + 2, enemy_moves) || under_attack((10*row) + 3, enemy_moves)) {
+        if (under_attack(king-2, enemy_moves) || under_attack(king-1, enemy_moves)) {
             (*castle)[2] = false;
         }
     }
@@ -1013,18 +1038,18 @@ void Game::check_en_passant(int start_pos, int end_pos) {
     }
 
     int diff;
-    if (board.data[end_pos/10][end_pos%10] == 1) {
+    if (board.data[end_pos] == 1) {
         //white pawn
         diff = end_pos - start_pos;
-        if (diff == -20) {
-            board.en_passant = start_pos - 10;
+        if (diff == -16) {
+            board.en_passant = start_pos - 8;
         } else {
             board.en_passant = -1;
         }
-    } else if (board.data[end_pos/10][end_pos%10] == -1) {
+    } else if (board.data[end_pos] == -1) {
         diff = end_pos - start_pos;
-        if (diff == 20) {
-            board.en_passant = start_pos + 10;
+        if (diff == 16) {
+            board.en_passant = start_pos + 8;
         } else {
             board.en_passant = -1;
         }

@@ -2,16 +2,16 @@
 #include "board.h"
 
 Board::Board() {
-    data = {{
-        {-4, -3, -2, -5, -6, -2, -3, -4},
-        {-1, -1, -1, -1, -1, -1, -1, -1},
-        {0, 0, 0, 0, 0, 0, 0, 0},
-        {0, 0, 0, 0, 0, 0, 0, 0},
-        {0, 0, 0, 0, 0, 0, 0, 0},
-        {0, 0, 0, 0, 0, 0, 0, 0},
-        {1, 1, 1, 1, 1, 1, 1, 1},
-        {4, 3, 2, 5, 6, 2, 3, 4},
-    }};
+    data = {
+        -4, -3, -2, -5, -6, -2, -3, -4,
+        -1, -1, -1, -1, -1, -1, -1, -1,
+        0, 0, 0, 0, 0, 0, 0, 0,
+        0, 0, 0, 0, 0, 0, 0, 0,
+        0, 0, 0, 0, 0, 0, 0, 0,
+        0, 0, 0, 0, 0, 0, 0, 0,
+        1, 1, 1, 1, 1, 1, 1, 1,
+        4, 3, 2, 5, 6, 2, 3, 4,
+    };
     w_turn = true;
     w_king_pos = 74;
     b_king_pos = 4;
@@ -22,7 +22,7 @@ Board::Board() {
     en_passant = -1;
 }
 
-Board::Board(std::array<std::array<int, 8>, 8> data, bool w_turn, int w_king_pos, int b_king_pos, bool w_check, bool b_check, std::array<bool, 4> w_castle, std::array<bool, 4> b_castle,
+Board::Board(std::array<int, 64> data, bool w_turn, int w_king_pos, int b_king_pos, bool w_check, bool b_check, std::array<bool, 4> w_castle, std::array<bool, 4> b_castle,
  int en_passant) {
     this->data = data;
     this->w_turn = w_turn;

@@ -12,10 +12,8 @@ struct BoardHasher {
     std::size_t operator()(const Board& b) const {
         std::size_t hash = 0;
         //board
-        for (int i=0; i < 8; i++) {
-            for (int j=0; j < 8; j++) {
-                hash ^= std::hash<int>()(b.data[i][j]);
-            }
+        for (int i=0; i < 64; i++) {
+            hash ^= std::hash<int>()(b.data[i]);
         }
         //turn
         hash ^= std::hash<bool>()(b.w_turn);
@@ -43,8 +41,7 @@ class Game {
         Texture2D select_texture;
 
         //constructor
-        Game();
-        Game(bool textures);
+        Game(bool textures=true);
         //drawing
         void draw_game();
         void promotion_menu();
@@ -91,12 +88,12 @@ class Game {
         void move_piece(int start_pos, int end_pos);
         void check_castle(std::vector<int> enemy_moves);
         void check_en_passant(int start_pos, int end_pos);
-        std::vector<int> get_pawn_moves(int i, int j);
-        std::vector<int> get_bishop_moves(int i, int j);
-        std::vector<int> get_knight_moves(int i, int j);
-        std::vector<int> get_rook_moves(int i, int j);
-        std::vector<int> get_queen_moves(int i, int j);
-        std::vector<int> get_king_moves(int i, int j);
+        std::vector<int> get_pawn_moves(int pos);
+        std::vector<int> get_bishop_moves(int pos);
+        std::vector<int> get_knight_moves(int pos);
+        std::vector<int> get_rook_moves(int pos);
+        std::vector<int> get_queen_moves(int pos);
+        std::vector<int> get_king_moves(int pos);
         std::vector<int> get_trajectory(int pos);
         std::vector<int> get_all_trajectories();
         std::vector<int> get_all_trajectories(bool w_turn);
