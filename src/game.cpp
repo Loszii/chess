@@ -51,17 +51,8 @@ Game::Game(bool textures) {
             }
         }
     } else { //flipped
-        /*
         for (int i=0; i < 64; i ++) {
             coord[63-i] = std::make_tuple(x, y);
-            x += SQUARE_WIDTH;
-            if (x == SCREEN_WIDTH - BEVEL) {
-                x = BEVEL;
-                y += SQUARE_WIDTH;
-            }
-        }*/
-        for (int i=0; i < 64; i ++) {
-            coord[i] = std::make_tuple(x, y);
             x += SQUARE_WIDTH;
             if (x == SCREEN_WIDTH - BEVEL) {
                 x = BEVEL;
@@ -163,7 +154,9 @@ void Game::set_promotion_pos() {
 void Game::apply_promotion(int pos) {
     //given a position of three digits, promote pawn at select_pos to pos
     update_board(select_pos, pos);
-    check_draw();
+    if (check_draw()) {
+        game_over = 3;
+    }
     check_game_over(); //checks for end of game
     is_promoting = -1; //disables promotion menu
 }
@@ -221,7 +214,9 @@ void Game::select_move(int pos) {
                     if (pos == moves[i]) {
                         select = false;
                         update_board(select_pos, pos);
-                        check_draw();
+                        if (check_draw()) {
+                            game_over = 3;
+                        }
                         check_game_over(); //checks for end of game
                         break;
                     }
@@ -250,7 +245,8 @@ void Game::check_for_selection(int pos) {
         //below code runs if there is a move to select
         select = true;
         select_pos = pos;
-        moves = get_legal_moves(pos); //gets possible moves
+        moves.clear();
+        get_legal_moves(pos, moves); //gets possible moves
         set_promotion_pos(); //adds any promo squares
     } else {
         select = false;
@@ -266,13 +262,11 @@ int Game::get_index(int x, int y) {
     x = x / SQUARE_WIDTH;
     pos = y*8 + x;
     if (pos >= 0 && pos <= 63) {
-        /*
         if (player_turn && board.w_turn) {
             return pos;
-        } else { //swap for black player
+        } else { //swap for playing as black
             return 63 - pos;
-        }*/
-        return pos;
+        }
     } else {
         return -1; //cannot find index
     }
@@ -293,7 +287,7 @@ Board Game::update_board(int start_pos, int end_pos) {
     swap_turn();
 
     std::vector<int> enemy_moves = get_all_trajectories(!board.w_turn);
-    std::vector<int> ally_moves = get_all_trajectories();
+    std::vector<int> ally_moves = get_all_trajectories(board.w_turn);
     board.w_king_pos = get_piece_pos(6);
     board.b_king_pos = get_piece_pos(-6);
     if (board.w_turn) {
@@ -354,12 +348,14 @@ void Game::check_game_over() {
     }
 }
 
-void Game::check_draw() {
-    //hash board and see if == 3
+bool Game::check_draw() {
+    //returns true if draw
     if (hash_board()) { //3 repition
-        game_over = 3;
+        return true;
     } else if (insuf_material()) { //insufficient material
-        game_over = 3;
+        return true;
+    } else {
+        return false;
     }
 }
 
@@ -491,13 +487,6 @@ void Game::get_pawn_moves(int pos, std::vector<int>& result) {
         if (pos >= 8 && pos <= 15) {
             will_promote = true;
         }
-        //straight squares
-        if (board.data[pos - 8] == 0) {
-            result.push_back(pos-8);
-        }
-        if (pos >= 48 && pos <= 55 && board.data[pos-8] == 0 && board.data[pos-16] == 0) { //add extra
-            result.push_back(pos-16);
-        }
         //diagonal
         if ((pos-7) % 8 != 0 && board.data[pos-7] < 0) {
             result.push_back(pos-7);
@@ -509,16 +498,16 @@ void Game::get_pawn_moves(int pos, std::vector<int>& result) {
         if ((pos - 7 == board.en_passant || pos - 9 == board.en_passant) && pos >= 24 && pos <= 31) {
             result.push_back(board.en_passant);
         }
+        //straight squares
+        if (board.data[pos-8] == 0) {
+            result.push_back(pos-8);
+        }
+        if (pos >= 48 && pos <= 55 && board.data[pos-8] == 0 && board.data[pos-16] == 0) { //add extra
+            result.push_back(pos-16);
+        }
     } else {
         if (pos >= 48 && pos <= 55) {
             will_promote = true;
-        }
-        //straight squares
-        if (board.data[pos + 8] == 0) {
-            result.push_back(pos+8);
-        }
-        if (pos >= 8 && pos <= 15 && board.data[pos+8] == 0 && board.data[pos+16] == 0) { //add extra
-            result.push_back(pos+16);
         }
         //diagonal
         if (pos % 8 != 0 && board.data[pos+7] > 0) {
@@ -531,16 +520,23 @@ void Game::get_pawn_moves(int pos, std::vector<int>& result) {
         if ((pos + 7 == board.en_passant || pos + 9 == board.en_passant) && pos >= 32 && pos <= 39) {
             result.push_back(board.en_passant);
         }
+        //straight squares
+        if (board.data[pos + 8] == 0) {
+            result.push_back(pos+8);
+        }
+        if (pos >= 8 && pos <= 15 && board.data[pos+8] == 0 && board.data[pos+16] == 0) { //add extra
+            result.push_back(pos+16);
+        }
     }
     //if will promote loop through all promotion
     if (will_promote) {
         std::vector<int> promotion_result;
         for (int i=0; i < (int)result.size(); i++) {
             int pos = result[i];
-            promotion_result.push_back(200 + pos); //bishop
-            promotion_result.push_back(300 + pos);
+            promotion_result.push_back(500 + pos); //bishop
             promotion_result.push_back(400 + pos);
-            promotion_result.push_back(500 + pos);
+            promotion_result.push_back(300 + pos);
+            promotion_result.push_back(200 + pos);
         }
         result = promotion_result;
     }
@@ -852,29 +848,6 @@ void Game::get_king_moves(int pos, std::vector<int>& result) {
     }
 }
 
-std::vector<int> Game::get_trajectory(int pos) {
-    //returns all possible indices to move, legal or not
-
-    std::vector<int> result;
-    result.reserve(27); //27 max queen moves, this will prevent copying
-    int piece = board.data[pos];
-
-    if (piece == 1 || piece == -1) {
-        get_pawn_moves(pos, result);
-    } else if (piece == 2 || piece == -2) {
-        get_bishop_moves(pos, result);
-    } else if (piece == 3 || piece == -3) {
-        get_knight_moves(pos, result);
-    } else if (piece == 4 || piece == -4) {
-        get_rook_moves(pos, result);
-    } else if (piece == 5 || piece == -5) {
-        get_queen_moves(pos, result);
-    } else if (piece == 6 || piece == -6) {
-        get_king_moves(pos, result);
-    }
-    return result;
-}
-
 void Game::get_trajectory(int pos, std::vector<int>& result) {
     //returns all possible indices to move, legal or not
 
@@ -895,24 +868,10 @@ void Game::get_trajectory(int pos, std::vector<int>& result) {
     }
 }
 
-std::vector<int> Game::get_all_trajectories() {
-    //returns all trajectories of the players to move pieces
-    std::vector<int> result;
-    result.reserve(100); //to prevent copying
-
-    for (int i=0; i < 64; i++) {
-        if ((board.w_turn && board.data[i] > 0) || (!board.w_turn && board.data[i] < 0)) { //determines black or white side
-            get_trajectory(i, result); //get all piece
-        }
-    }
-
-    return result;
-}
-
 std::vector<int> Game::get_all_trajectories(bool w_turn) {
     //returns all trajectories of the players to move pieces
     std::vector<int> result;
-    result.reserve(100); //to prevent copying
+    result.reserve(50); //to prevent copying
 
     for (int i=0; i < 64; i++) {
         if ((w_turn && board.data[i] > 0) || (!w_turn && board.data[i] < 0)) { //determines black or white side
@@ -923,43 +882,36 @@ std::vector<int> Game::get_all_trajectories(bool w_turn) {
     return result;
 }
 
-std::vector<int> Game::get_legal_moves(int pos) {
-    //uses board in parameter
-    std::vector<int> result;
-    result.reserve(100);
-    std::vector<int> all_moves = get_trajectory(pos);
-    bool w_turn; //duplicate variable since will change after updating
-    if (board.w_turn) {
-        w_turn = true;
-    } else {
-        w_turn = false;
-    }
+void Game::get_legal_moves(int pos, std::vector<int>& result) {
+    //appends all legal moves at pos in board to result
+    std::vector<int> all_moves;
+    all_moves.reserve(10);
+    get_trajectory(pos, all_moves);
+
     for (int i=0; i < (int)all_moves.size(); i++) {
         Board old_board = update_board(pos, all_moves[i]);
-        if ((w_turn && !board.w_check) || (!w_turn && !board.b_check)) {
+        if ((!board.w_turn && !board.w_check) || (board.w_turn && !board.b_check)) { //update swaps turn so must swap back
             result.push_back(all_moves[i]);
         }
         undo_update_board(old_board);
     }
-    return result;
 }
+
 
 std::vector<std::vector<int>> Game::get_all_legal_moves() {
     //returns an array of arrays, with the first element being the position of piece and the rest its available moves
     //will return all legal moves of whoevers turn it is
     std::vector<std::vector<int>> result;
-    result.reserve(16); //num of max pieces
+    result.reserve(10); //num of max pieces
 
     for (int i=0; i < 64; i++) {
         if ((board.w_turn && board.data[i] > 0) || (!board.w_turn && board.data[i] < 0)) { //determines black or white side
-            std::vector<int> legal_moves = get_legal_moves(i); //get all piece
-            std::vector<int> temp; //temp to prepend position to
-            if (!legal_moves.empty()) {
-                temp.push_back(i); //add piece in front
-                for (int k=0; k < (int)legal_moves.size(); k++) {
-                    temp.push_back(legal_moves[k]); //add to final array
-                }
-                result.push_back(temp);
+            std::vector<int> legal_moves;
+            legal_moves.reserve(15);
+            legal_moves.push_back(i); //add original pos
+            get_legal_moves(i, legal_moves); //get all legal
+            if (legal_moves.size() != 1) { //if not just original position
+                result.push_back(legal_moves);
             }
         }
     }
@@ -1010,42 +962,45 @@ void Game::check_castle(bool w_turn, const std::vector<int>& enemy_moves) {
 
         //since checking if empty square is under attack must consider pawns moving diag (wont show in enemy_moves())
         //all spots except leftmost will stop castling
-        if (w_turn) {
-            if (board.data[52] == -1) {
-                (*castle)[0] = false;
-                (*castle)[2] = false;
-            } else {
-                if (board.data[53] == -1 || board.data[54] == -1 || board.data[55] == -1) {
+        if ((*castle)[0] || (*castle)[2]) {
+            if (w_turn) {
+                if (board.data[52] == -1) {
                     (*castle)[0] = false;
-                }
-                if (board.data[49] == -1 || board.data[50] == -1 || board.data[51] == -1) {
                     (*castle)[2] = false;
+                } else {
+                    if (board.data[53] == -1 || board.data[54] == -1 || board.data[55] == -1) {
+                        (*castle)[0] = false;
+                    }
+                    if (board.data[49] == -1 || board.data[50] == -1 || board.data[51] == -1) {
+                        (*castle)[2] = false;
+                    }
+                }
+            } else {
+                if (board.data[12] == 1) {
+                    (*castle)[0] = false;
+                    (*castle)[2] = false;
+                } else {
+                    if (board.data[13] == 1 || board.data[14] == 1 || board.data[15] == 1) {
+                        (*castle)[0] = false;
+                    }
+                    if (board.data[9] == 1 || board.data[10] == 1 || board.data[11] == 1) {
+                        (*castle)[2] = false;
+                    }
                 }
             }
-        } else {
-            if (board.data[12] == 1) {
-                (*castle)[0] = false;
-                (*castle)[2] = false;
-            } else {
-                if (board.data[13] == 1 || board.data[14] == 1 || board.data[15] == 1) {
-                    (*castle)[0] = false;
-                }
-                if (board.data[9] == 1 || board.data[10] == 1 || board.data[11] == 1) {
-                    (*castle)[2] = false;
-                }
-            }
-        }
 
-        if ((*castle)[0] || (*castle)[2]) { //if both are not already both false
-            if (under_attack(king, enemy_moves)) {
-                (*castle)[0] = false;
-                (*castle)[2] = false;
-            }
-            if (under_attack(king+1, enemy_moves) || under_attack(king+2, enemy_moves)) {
-                (*castle)[0] = false;
-            } 
-            if (under_attack(king-2, enemy_moves) || under_attack(king-1, enemy_moves)) {
-                (*castle)[2] = false;
+            if ((*castle)[0] || (*castle)[2]) { //if both are not already both false
+                for (int i=0; i < (int)enemy_moves.size(); i++) { //dont use under_attack to prevent looping multiple times
+                    int e_pos = enemy_moves[i]%100;
+                    if (e_pos == king) {
+                        (*castle)[0] = false;
+                        (*castle)[2] = false;
+                    } else if (e_pos == king+1 || e_pos == king+2) {
+                        (*castle)[0] = false;
+                    } else if (e_pos == king-2 || e_pos == king-1) {
+                        (*castle)[2] = false;
+                    }
+                }
             }
         }
     }
@@ -1059,24 +1014,20 @@ void Game::check_en_passant(int start_pos, int end_pos) {
         board.en_passant = -1;
         return;
     }
-
     int diff;
     if (board.data[end_pos] == 1) {
         //white pawn
         diff = end_pos - start_pos;
         if (diff == -16) {
             board.en_passant = start_pos - 8;
-        } else {
-            board.en_passant = -1;
+            return;
         }
     } else if (board.data[end_pos] == -1) {
         diff = end_pos - start_pos;
         if (diff == 16) {
             board.en_passant = start_pos + 8;
-        } else {
-            board.en_passant = -1;
+            return;
         }
-    } else {
-        board.en_passant = -1;
     }
+    board.en_passant = -1;
 }

@@ -9,9 +9,9 @@
 to do: 
 -use two stacks with board structs to undo moves
 
--use fixed size arrays for board, and moves. board will be 64 size and moves will be 30
+-maybe have all funcs take in a vector and push back instead of creating and returning
 
--to speed up castling only check temps if perms are true
+-add alpha beta pruning and improve draw function by a lot
 
 -look over move generation and remove/improve redundant code
 
@@ -49,13 +49,7 @@ int main() {
                     }
                 }
             } else {
-                if (IsMouseButtonPressed(0)) {
-                    int pos = game.get_index(GetMouseX(), GetMouseY());
-                    if (pos != -1) {
-                        game.select_move(pos);
-                    }
-                }
-                //game.engine_move();
+                game.engine_move();
             }
         } else if (game.is_promoting != -1) {
             if (IsMouseButtonPressed(0)) {

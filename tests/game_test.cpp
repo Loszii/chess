@@ -6,8 +6,6 @@
 
 //https://www.chessprogramming.org/Perft_Results
 
-//possibly split all positions into differnet TEST cases
-
 typedef unsigned long long u64;
 
 u64 perft(Game& game, int depth) {

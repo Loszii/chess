@@ -71,7 +71,7 @@ class Game {
         bool under_attack(int pos, const std::vector<int>& enemy_moves);
         int get_piece_pos(int piece);
         void check_game_over();
-        void check_draw();
+        bool check_draw();
         bool insuf_material();
         std::unordered_map<int, int> get_material();
         bool hash_board();
@@ -86,11 +86,11 @@ class Game {
         void get_rook_moves(int pos, std::vector<int>& result);
         void get_queen_moves(int pos, std::vector<int>& result);
         void get_king_moves(int pos, std::vector<int>& result);
-        std::vector<int> get_trajectory(int pos);
         void get_trajectory(int pos, std::vector<int>& result);
-        std::vector<int> get_all_trajectories();
         std::vector<int> get_all_trajectories(bool w_turn);
-        std::vector<int> get_legal_moves(int pos);
+        void get_legal_moves(int pos, std::vector<int>& result);
         //engine
-        std::array<int, 2> minimax();
+        int evaluate_board();
+        std::array<int, 2> minimax(int depth);
+        int minimax_helper(int depth);
 };
