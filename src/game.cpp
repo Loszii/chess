@@ -293,16 +293,18 @@ Board Game::update_board(int start_pos, int end_pos) {
     swap_turn();
 
     std::vector<int> enemy_moves = get_all_trajectories(!board.w_turn);
-    if (board.w_turn) { //updating before white moves
-        board.b_check = false;
-        board.w_king_pos = get_piece_pos(6);
+    std::vector<int> ally_moves = get_all_trajectories();
+    board.w_king_pos = get_piece_pos(6);
+    board.b_king_pos = get_piece_pos(-6);
+    if (board.w_turn) {
         board.w_check = under_attack(board.w_king_pos, enemy_moves);
+        board.b_check = under_attack(board.b_king_pos, ally_moves);
     } else {
-        board.w_check = false;
-        board.b_king_pos = get_piece_pos(-6);
+        board.w_check = under_attack(board.w_king_pos, ally_moves);
         board.b_check = under_attack(board.b_king_pos, enemy_moves);
     }
-    check_castle(enemy_moves);
+
+    check_castle(enemy_moves); //maybe make this update both players instead of just current
     check_en_passant(start_pos, end_pos);
     return old_board;
 }
@@ -922,16 +924,15 @@ std::vector<int> Game::get_legal_moves(int pos) {
     //uses board in parameter
     std::vector<int> result;
     std::vector<int> all_moves = get_trajectory(pos);
-    int king;
+    bool w_turn; //duplicate variable since will change after updating
     if (board.w_turn) {
-        king = 6;
+        w_turn = true;
     } else {
-        king = -6;
+        w_turn = false;
     }
     for (int i=0; i < (int)all_moves.size(); i++) {
         Board old_board = update_board(pos, all_moves[i]);
-        std::vector<int> enemy_moves = get_all_trajectories();
-        if (!under_attack(get_piece_pos(king), enemy_moves)) {
+        if ((w_turn && !board.w_check) || (!w_turn && !board.b_check)) {
             result.push_back(all_moves[i]);
         }
         undo_update_board(old_board);
