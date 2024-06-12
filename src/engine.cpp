@@ -3,8 +3,11 @@
 #include <tuple>
 #include <vector>
 #include <array>
-#include <random>
+#include <limits>
 #include "game.h"
+
+const int MAX_INT = std::numeric_limits<int>::max();
+const int MIN_INT = std::numeric_limits<int>::min();
 
 //actually making the move
 void Game::engine_move() {
@@ -15,8 +18,21 @@ void Game::engine_move() {
     check_game_over();
 }
 
-//evaluation and minimiax algorithm here
-
+//eval stuff
+void Game::init_piece_val() {
+    piece_val[0] = 0; //incase call with empty sqaure
+    piece_val[1] = 10;
+    piece_val[-1] = -10;
+    piece_val[2] = 30;
+    piece_val[-2] = -30;
+    piece_val[3] = 30;
+    piece_val[-3] = -30;
+    piece_val[4] = 50;
+    piece_val[-4] = -50;
+    piece_val[5] = 90;
+    piece_val[-5] = -90;
+}
+/*
 std::array<int, 64> scale = {0, 0, 0, 0, 0, 0, 0, 0,
                         0, 1, 1, 1, 1, 1, 1, 0,
                         0, 1, 1, 1, 1, 1, 1, 0,
@@ -24,20 +40,19 @@ std::array<int, 64> scale = {0, 0, 0, 0, 0, 0, 0, 0,
                         0, 1, 1, 2, 2, 1, 1, 0,
                         0, 1, 1, 1, 1, 1, 1, 0,
                         0, 1, 1, 1, 1, 1, 1, 0,
-                        0, 0, 0, 0, 0, 0, 0, 0};
+                        0, 0, 0, 0, 0, 0, 0, 0};*/
 
 int Game::evaluate_board() {
     int score = 0;
     for (int i=0;i < 64; i++) {
-        if (board.data[i] > 0) {
-            score += board.data[i] + scale[i];
-        } else if (board.data[i] < 0) {
-            score += board.data[i] - scale[i];
+        if (board.data[i] != 0) {
+            score += piece_val[board.data[i]];
         }
     }
     return score;
 }
 
+//algorithm
 std::array<int, 2> Game::minimax(int depth) {
     //returns an array [start_pos, end_pos] of best move to make for current players turn
     std::array<int, 2> result;
@@ -45,16 +60,15 @@ std::array<int, 2> Game::minimax(int depth) {
     int eval;
     std::vector<std::vector<int>> moves = get_all_legal_moves();
     if (board.w_turn) {
-        best = -(int)INFINITY;
+        best = MIN_INT;
         for (int i=0; i < (int)moves.size(); i++) {
             for (int j=1; j < (int)moves[i].size(); j++) {
                 Board old_board = update_board(moves[i][0], moves[i][j]);
-                //do something
                 
-                if (is_hash_limit()) { //see if 3 repition
+                if (is_hash_limit()) { //hashing this board will result in a draw
                     eval = 0;
                 } else {
-                    eval = minimax_helper(depth-1);
+                    eval = minimax_helper(depth-1); //recursively make more moves till depth reached
                 }
                 best = std::max(best, eval);
 
@@ -65,13 +79,12 @@ std::array<int, 2> Game::minimax(int depth) {
             }
         }
     } else {
-        best = (int)INFINITY;
+        best = MAX_INT;
         for (int i=0; i < (int)moves.size(); i++) {
             for (int j=1; j < (int)moves[i].size(); j++) {
                 Board old_board = update_board(moves[i][0], moves[i][j]);
-                //do something
 
-                if (is_hash_limit()) { //see if 3 repition
+                if (is_hash_limit()) {
                     eval = 0;
                 } else {
                     eval = minimax_helper(depth-1);
@@ -85,7 +98,6 @@ std::array<int, 2> Game::minimax(int depth) {
             }
         }
     }
-
     return result;
 }
 
@@ -103,11 +115,10 @@ int Game::minimax_helper(int depth) {
                 return 0;
             }
         }
-        best = -(int)INFINITY;
+        best = MIN_INT;
         for (int i=0; i < (int)moves.size(); i++) {
             for (int j=1; j < (int)moves[i].size(); j++) {
                 Board old_board = update_board(moves[i][0], moves[i][j]);
-                //do something
 
                 eval = minimax_helper(depth-1);
                 best = std::max(best, eval);
@@ -121,11 +132,10 @@ int Game::minimax_helper(int depth) {
                 return 0;
             }
         }
-        best = (int)INFINITY;
+        best = MAX_INT;
         for (int i=0; i < (int)moves.size(); i++) {
             for (int j=1; j < (int)moves[i].size(); j++) {
                 Board old_board = update_board(moves[i][0], moves[i][j]);
-                //do something
 
                 eval = minimax_helper(depth-1);
                 best = std::min(best, eval);
@@ -134,6 +144,5 @@ int Game::minimax_helper(int depth) {
             }
         }
     }
-
     return best;
 }

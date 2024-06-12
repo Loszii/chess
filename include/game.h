@@ -56,6 +56,7 @@ class Game {
         const int BEVEL = 8;
         const double SCALE = 0.75;
         
+        std::unordered_map<int, int> piece_val; //for evaluating pieces
         std::unordered_map<Board, int, BoardHasher> history; //prev boards
         std::vector<int> promotion_positions;
         std::vector<int> moves; //storage for current possible moves of selected piece
@@ -91,6 +92,7 @@ class Game {
         std::vector<int> get_all_trajectories(bool w_turn);
         void get_legal_moves(int pos, std::vector<int>& result);
         //engine
+        void init_piece_val();
         int evaluate_board();
         std::array<int, 2> minimax(int depth);
         int minimax_helper(int depth);

@@ -60,6 +60,8 @@ Game::Game(bool textures) {
             }
         }
     }
+    //engine
+    init_piece_val();
     //hashing first board
     history[board] = 1;
 }
