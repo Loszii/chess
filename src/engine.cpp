@@ -17,10 +17,23 @@ void Game::engine_move() {
 
 //evaluation and minimiax algorithm here
 
+std::array<int, 64> scale = {0, 0, 0, 0, 0, 0, 0, 0,
+                        0, 1, 1, 1, 1, 1, 1, 0,
+                        0, 1, 1, 1, 1, 1, 1, 0,
+                        0, 1, 1, 2, 2, 1, 1, 0,
+                        0, 1, 1, 2, 2, 1, 1, 0,
+                        0, 1, 1, 1, 1, 1, 1, 0,
+                        0, 1, 1, 1, 1, 1, 1, 0,
+                        0, 0, 0, 0, 0, 0, 0, 0};
+
 int Game::evaluate_board() {
     int score = 0;
     for (int i=0;i < 64; i++) {
-        score += board.data[i];
+        if (board.data[i] > 0) {
+            score += board.data[i] + scale[i];
+        } else if (board.data[i] < 0) {
+            score += board.data[i] - scale[i];
+        }
     }
     return score;
 }
@@ -37,16 +50,14 @@ std::array<int, 2> Game::minimax(int depth) {
             for (int j=1; j < (int)moves[i].size(); j++) {
                 Board old_board = update_board(moves[i][0], moves[i][j]);
                 //do something
-                /*
-                if (check_draw()) { //to prevent 3 repition draw when ahead / for now too slow needs work
+                
+                if (is_hash_limit()) { //see if 3 repition
                     eval = 0;
                 } else {
                     eval = minimax_helper(depth-1);
-                }*/
-                eval = minimax_helper(depth-1);
+                }
                 best = std::max(best, eval);
 
-                //undo_hash_board(); //unhashes board that check_draw hashed
                 undo_update_board(old_board);
                 if (eval == best) {  //this was best run so far
                     result = {moves[i][0], moves[i][j]};
@@ -59,16 +70,14 @@ std::array<int, 2> Game::minimax(int depth) {
             for (int j=1; j < (int)moves[i].size(); j++) {
                 Board old_board = update_board(moves[i][0], moves[i][j]);
                 //do something
-                /*
-                if (check_draw()) {
+
+                if (is_hash_limit()) { //see if 3 repition
                     eval = 0;
                 } else {
                     eval = minimax_helper(depth-1);
-                }*/
-                eval = minimax_helper(depth-1);
+                }
                 best = std::min(best, eval);
 
-                //undo_hash_board(); //unhashes board that check_draw hashed
                 undo_update_board(old_board);
                 if (eval == best) {  //this was best run so far
                     result = {moves[i][0], moves[i][j]};
@@ -99,16 +108,10 @@ int Game::minimax_helper(int depth) {
             for (int j=1; j < (int)moves[i].size(); j++) {
                 Board old_board = update_board(moves[i][0], moves[i][j]);
                 //do something
-                /*
-                if (check_draw()) {
-                    eval = 0;
-                } else {
-                    eval = minimax_helper(depth-1);
-                }*/
+
                 eval = minimax_helper(depth-1);
                 best = std::max(best, eval);
 
-                //undo_hash_board();
                 undo_update_board(old_board);
             }
         }
@@ -123,16 +126,10 @@ int Game::minimax_helper(int depth) {
             for (int j=1; j < (int)moves[i].size(); j++) {
                 Board old_board = update_board(moves[i][0], moves[i][j]);
                 //do something
-                /*
-                if (check_draw()) {
-                    eval = 0;
-                } else {
-                    eval = minimax_helper(depth-1);
-                }*/
+
                 eval = minimax_helper(depth-1);
                 best = std::min(best, eval);
 
-                //undo_hash_board();
                 undo_update_board(old_board);
             }
         }

@@ -154,9 +154,7 @@ void Game::set_promotion_pos() {
 void Game::apply_promotion(int pos) {
     //given a position of three digits, promote pawn at select_pos to pos
     update_board(select_pos, pos);
-    if (check_draw()) {
-        game_over = 3;
-    }
+    check_draw();
     check_game_over(); //checks for end of game
     is_promoting = -1; //disables promotion menu
 }
@@ -214,9 +212,7 @@ void Game::select_move(int pos) {
                     if (pos == moves[i]) {
                         select = false;
                         update_board(select_pos, pos);
-                        if (check_draw()) {
-                            game_over = 3;
-                        }
+                        check_draw();
                         check_game_over(); //checks for end of game
                         break;
                     }
@@ -348,14 +344,12 @@ void Game::check_game_over() {
     }
 }
 
-bool Game::check_draw() {
-    //returns true if draw
+void Game::check_draw() {
+    //sets game_over to 3 if draw
     if (hash_board()) { //3 repition
-        return true;
+        game_over = 3;
     } else if (insuf_material()) { //insufficient material
-        return true;
-    } else {
-        return false;
+        game_over = 3;
     }
 }
 
@@ -417,6 +411,15 @@ bool Game::hash_board() {
 void Game::undo_hash_board() {
     //undoes a hashing of board to history, to be used with minimax when evaluating positions
     history[board] -= 1;
+}
+
+bool Game::is_hash_limit() {
+    //function to see if achieving current board state could end up in a 3 draw rep
+    if (history[board] == 2) {
+        return true;
+    } else {
+        return false;
+    }
 }
 
 void Game::move_piece(int start_pos, int end_pos) {

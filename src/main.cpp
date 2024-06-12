@@ -11,9 +11,13 @@ to do:
 
 -maybe have all funcs take in a vector and push back instead of creating and returning
 
--add alpha beta pruning and improve draw function by a lot
+-add alpha beta pruning and improve draw function time complexity by a lot if we even want to use it
+
+-add evaluation boards for all pieces, and make the pieces weigh more (map of piece to a quantity >= 10)
 
 -look over move generation and remove/improve redundant code
+
+-instead of hashing in minimax can check if the hash is == 2 then must be draw, no need for insuf material since it cant control losing
 
 */
 

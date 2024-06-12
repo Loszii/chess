@@ -71,11 +71,12 @@ class Game {
         bool under_attack(int pos, const std::vector<int>& enemy_moves);
         int get_piece_pos(int piece);
         void check_game_over();
-        bool check_draw();
+        void check_draw();
         bool insuf_material();
         std::unordered_map<int, int> get_material();
         bool hash_board();
         void undo_hash_board();
+        bool is_hash_limit();
         //movement
         void move_piece(int start_pos, int end_pos);
         void check_castle(bool w_turn, const std::vector<int>& enemy_moves);
