@@ -7,13 +7,14 @@
 
 /*
 to do: 
+
+-create a end game table for king to be aggressive and checkmate
+
 -use two stacks with board structs to undo moves
 
--add evaluation boards for all pieces, and make the pieces weigh more (map of piece to a quantity >= 10)
+-make a function get all captures that returns all most that are captures, continue our negamax after depth 0 through all captures to prevent horizon
 
--look into alpha beta pruning
-
--look over move generation and remove/improve redundant code
+-put castling in front of king for alpha beta pruning
 */
 
 
@@ -47,15 +48,16 @@ int main() {
                         game.select_move(pos);
                     }
                 }
+                //game.engine_move(3); (to have engine vs engine)
             } else {
-                game.engine_move();
+                game.engine_move(3);
             }
         } else if (game.is_promoting != -1) {
             if (IsMouseButtonPressed(0)) {
                 int x = GetMouseX();
                 int y = GetMouseY();
 
-                game.pick_a_piece(x, y);
+                game.pick_a_piece(x, y); //pick piece to promote
             }
         }
     }

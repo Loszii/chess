@@ -46,7 +46,7 @@ class Game {
         //movement
         std::vector<std::vector<int>> get_all_legal_moves();
         //engine
-        void engine_move();
+        void engine_move(int depth);
 
     private:
         const int SCREEN_WIDTH = 784;
@@ -56,6 +56,7 @@ class Game {
         const int BEVEL = 8;
         const double SCALE = 0.75;
         
+        std::unordered_map<int, std::array<int, 64>> eval_val;
         std::unordered_map<int, int> piece_val; //for evaluating pieces
         std::unordered_map<Board, int, BoardHasher> history; //prev boards
         std::vector<int> promotion_positions;
@@ -76,8 +77,7 @@ class Game {
         bool insuf_material();
         std::unordered_map<int, int> get_material();
         bool hash_board();
-        void undo_hash_board();
-        bool is_hash_limit();
+        bool is_prev_board();
         //movement
         void move_piece(int start_pos, int end_pos);
         void check_castle(bool w_turn, const std::vector<int>& enemy_moves);
@@ -92,8 +92,8 @@ class Game {
         std::vector<int> get_all_trajectories(bool w_turn);
         void get_legal_moves(int pos, std::vector<int>& result);
         //engine
-        void init_piece_val();
+        void init_engine();
         int evaluate_board();
-        std::array<int, 2> minimax(int depth);
-        int minimax_helper(int depth);
+        int negamax(int depth, int alpha, int beta);
+        std::array<int, 2> get_best_move(int depth);
 };

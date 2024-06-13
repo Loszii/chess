@@ -61,7 +61,7 @@ Game::Game(bool textures) {
         }
     }
     //engine
-    init_piece_val();
+    init_engine();
     //hashing first board
     history[board] = 1;
 }
@@ -410,14 +410,9 @@ bool Game::hash_board() {
     }
 }
 
-void Game::undo_hash_board() {
-    //undoes a hashing of board to history, to be used with minimax when evaluating positions
-    history[board] -= 1;
-}
-
-bool Game::is_hash_limit() {
-    //function to see if achieving current board state could end up in a 3 draw rep
-    if (history[board] == 2) {
+bool Game::is_prev_board() {
+    //function to see if achieving current board state could end up in a draw
+    if (history.find(board) != history.end()) {
         return true;
     } else {
         return false;
