@@ -4,7 +4,7 @@ This **C/C++** application includes a playable chess engine with a mid-range alg
 
 # Algorithm
 
-The AI in my program uses a common Artificial Intelligence algorithm called minimax, or more specifically in this case **negamax**. I've implemented multiple optimizations like alpha beta pruning. The AI plays like a **800-1000** elo player and seems capable of beating beginner-medium level chess players.
+The AI in my program uses a common Artificial Intelligence algorithm called minimax, or more specifically in this case **negamax**. I've implemented multiple optimizations like alpha beta pruning. The AI plays like a **1000** elo player and seems capable of beating beginner-medium level chess players.
 
 # Libraries
 
@@ -14,7 +14,7 @@ The entire chess engine was made using basic C++ code. The GUI was made possible
 
 To try and beat my mid-range AI, you can either compile the program yourself using cmake, or navigate to the **installer** directory and run the **.exe** to get the latest version.
 
-<p>
+<div>
   <img src="/res/readme_board.jpg" width="45%">
   <img src="/res/readme_mate.jpg" width="45%">
-</p>
+</div>
