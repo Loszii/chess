@@ -10,10 +10,11 @@ The AI in my program uses a common Artificial Intelligence algorithm called mini
 
 The entire chess engine was made using basic C++ code. The GUI was made possible using **Raylib** and GoogleTests was used to test move generation via a method called **"Perft"**.
 
-![Board](/res/readme_board.jpg)
-
 # How to Play
 
 To try and beat my mid-range AI, you can either compile the program yourself using cmake, or navigate to the **installer** directory and run the **.exe** to get the latest version.
 
-![CheckMate](/res/readme_mate.jpg)
+<p>
+  <img src="/res/readme_board.jpg" width="45%">
+  <img src="/res/readme_mate.jpg" width="45%">
+</p>
