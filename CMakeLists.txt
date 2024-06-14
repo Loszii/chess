@@ -47,12 +47,10 @@ target_link_libraries(
 
 #-----for installer-----
 
-set(INSTALL_GTEST OFF)
-set(INSTALL_GMOCK OFF)
 install(TARGETS chess RUNTIME DESTINATION bin)
 install(DIRECTORY res DESTINATION .)
-set(CPACK_PACKAGE_NAME "jaden chess engine")
-set(CPACK_PACKAGE_VERSION "1.0")
+set(CPACK_PACKAGE_NAME "Loszi's Chess Engine")
+set(CPACK_PACKAGE_VERSION "2.0")
 include(CPack)
 
 #-----for testing-----

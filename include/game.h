@@ -64,6 +64,7 @@ class Game {
         bool select = false;
         int select_pos = -1;
         std::unordered_map<int, std::tuple<int, int>> coord; //mapping of indices to x-y coord in window
+        bool end_game = false;
         //drawing
         void draw_select(int pos, Color color);
         //functionality
@@ -74,7 +75,7 @@ class Game {
         int get_piece_pos(int piece);
         void check_game_over();
         void check_draw();
-        bool insuf_material();
+        bool check_material();
         std::unordered_map<int, int> get_material();
         bool hash_board();
         bool is_prev_board();
@@ -93,6 +94,7 @@ class Game {
         void get_legal_moves(int pos, std::vector<int>& result);
         //engine
         void init_engine();
+        void init_end_game();
         int evaluate_board();
         int negamax(int depth, int alpha, int beta);
         std::array<int, 2> get_best_move(int depth);

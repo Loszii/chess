@@ -350,15 +350,33 @@ void Game::check_draw() {
     //sets game_over to 3 if draw
     if (hash_board()) { //3 repition
         game_over = 3;
-    } else if (insuf_material()) { //insufficient material
+    } else if (check_material()) { //insufficient material
         game_over = 3;
     }
 }
 
-bool Game::insuf_material() {
+bool Game::check_material() {
     //returns true if there is insufficient material and draw must be concluded
-    //can only have one of below for each side and no other pieces (and king ofc)
+    //also checks if endgame and if so initializes endgame engine evaluation board
+
+    //checking if in endgame for engine
     std::unordered_map<int, int> mats = get_material();
+    int w_sum = 0;
+    int b_sum = 0;
+    for (int i=1; i < 6; i++) {
+        w_sum += mats[i] * i; //*i to get value of piece
+    }
+    for (int i=-5; i < 0; i++) {
+        b_sum += mats[i] * -i;
+    }
+
+    if (!end_game && (w_sum < 6 || b_sum < 6)) { //one side has only a few pieces (val <= 5)
+        init_end_game();
+        end_game = true;
+    }
+
+    //checking if insuff material results in draw
+    //can only have one of below for each side and no other pieces (and king ofc)
     if (mats[-5] > 0 || mats[5] > 0) { //either have a queen
         return false;
     } else if (mats[-4] > 0 || mats[4] > 0) { //either have a rook
@@ -379,7 +397,7 @@ bool Game::insuf_material() {
 }
 
 std::unordered_map<int, int> Game::get_material() {
-    //returns a mapping of piece to occurance
+    //returns a mapping of piece to num occurance
     std::unordered_map<int, int> result;
     //init values
     for (int i=-6; i < 7; i++) {
@@ -411,7 +429,7 @@ bool Game::hash_board() {
 }
 
 bool Game::is_prev_board() {
-    //function to see if achieving current board state could end up in a draw
+    //function to see if achieving current board state could end up in a draw (has been previously hashed)
     if (history.find(board) != history.end()) {
         return true;
     } else {
@@ -479,6 +497,7 @@ void Game::move_piece(int start_pos, int end_pos) {
 }
 
 void Game::get_pawn_moves(int pos, std::vector<int>& result) {
+    //adds all pawn moves to result
 
     bool w_turn; //must have local turn since we can be checking enemy pawn moves
     //promotion checks
@@ -543,6 +562,7 @@ void Game::get_pawn_moves(int pos, std::vector<int>& result) {
 }
 
 void Game::get_bishop_moves(int pos, std::vector<int>& result) {
+    //adds all bishop moves to result
     bool w_turn;
     if (board.data[pos] > 0) {
         w_turn = true;
@@ -611,6 +631,7 @@ void Game::get_bishop_moves(int pos, std::vector<int>& result) {
 }
 
 void Game::get_knight_moves(int pos, std::vector<int>& result) {
+    //adds all knight moves to result
     bool w_turn;
     if (board.data[pos] > 0) {
         w_turn = true;
@@ -676,6 +697,7 @@ void Game::get_knight_moves(int pos, std::vector<int>& result) {
 }
 
 void Game::get_rook_moves(int pos, std::vector<int>& result) {
+    //adds all rook moves to result
     bool w_turn;
     if (board.data[pos] > 0) {
         w_turn = true;
@@ -741,17 +763,38 @@ void Game::get_rook_moves(int pos, std::vector<int>& result) {
 }
 
 void Game::get_queen_moves(int pos, std::vector<int>& result) {
+    //adds all queen moves to result
     get_bishop_moves(pos, result);
     get_rook_moves(pos, result);
 }
 
 void Game::get_king_moves(int pos, std::vector<int>& result) {
+    //adds all king moves to result
     bool w_turn;
     if (board.data[pos] > 0) {
         w_turn = true;
     } else {
         w_turn = false;
     }
+
+    //castling
+    int king;
+    std::array<bool, 4> castle;
+    if (w_turn) {
+        king = 60;
+        castle = board.w_castle;
+    } else {
+        king = 4;
+        castle = board.b_castle;
+    }
+    if (castle[0] && castle[1]) { //right
+        result.push_back(king + 2);
+    }
+    if (castle[2] && castle[3]) { //left
+        result.push_back(king - 2);
+    }
+
+    //normal moves
     int temp;
     if (pos % 8 == 0) { //on left
         temp = pos - 8;
@@ -829,27 +872,10 @@ void Game::get_king_moves(int pos, std::vector<int>& result) {
             result.push_back(pos-1);
         }
     }
-
-    //castling
-    int king;
-    std::array<bool, 4> castle;
-    if (w_turn) {
-        king = 60;
-        castle = board.w_castle;
-    } else {
-        king = 4;
-        castle = board.b_castle;
-    }
-    if (castle[0] && castle[1]) { //right
-        result.push_back(king + 2);
-    }
-    if (castle[2] && castle[3]) { //left
-        result.push_back(king - 2);
-    }
 }
 
 void Game::get_trajectory(int pos, std::vector<int>& result) {
-    //returns all possible indices to move, legal or not
+    //adds all possible trajectories (legal or not) of a piece at pos to result
 
     int piece = board.data[pos];
 
@@ -869,7 +895,7 @@ void Game::get_trajectory(int pos, std::vector<int>& result) {
 }
 
 std::vector<int> Game::get_all_trajectories(bool w_turn) {
-    //returns all trajectories of the players to move pieces
+    //returns all trajectories of the players to move pieces in a vector
     std::vector<int> result;
     result.reserve(50); //to prevent copying
 
@@ -901,6 +927,7 @@ void Game::get_legal_moves(int pos, std::vector<int>& result) {
 std::vector<std::vector<int>> Game::get_all_legal_moves() {
     //returns an array of arrays, with the first element being the position of piece and the rest its available moves
     //will return all legal moves of whoevers turn it is
+
     std::vector<std::vector<int>> result;
     result.reserve(10); //num of max pieces
 
@@ -919,7 +946,7 @@ std::vector<std::vector<int>> Game::get_all_legal_moves() {
 }
 
 void Game::check_castle(bool w_turn, const std::vector<int>& enemy_moves) {
-    //updates castle array for player to move, returns old array
+    //updates castle array for turn defiend in paramter, given a array of the enemies available moves
     std::array<bool, 4>* castle;
     if (w_turn) {
         castle = &board.w_castle;
@@ -1007,8 +1034,7 @@ void Game::check_castle(bool w_turn, const std::vector<int>& enemy_moves) {
 }
 
 void Game::check_en_passant(int start_pos, int end_pos) {
-    //checks for a pawn developing a en passant square.
-    //sets en_passant in board and returns old value for undoing
+    //checks for a pawn developing an en passant square.
 
     if (end_pos >= 100) { //promoting pawn so cant be en passant
         board.en_passant = -1;
