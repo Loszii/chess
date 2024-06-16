@@ -100,7 +100,10 @@ void Game::draw_game() {
     } else if (board.b_check) {
         draw_select(board.b_king_pos, Color{255, 0, 0, 150});
     }
+}
 
+void Game::draw_game_over() {
+    //draws the conclusion of match and play again button
     //game over
     if (game_over == 2 || game_over == -2) {
         int text_width = MeasureText("CHECKMATE", FONT_SIZE);
@@ -118,6 +121,18 @@ void Game::draw_game() {
         int y = (SCREEN_HEIGHT - FONT_SIZE) / 2;
         DrawText("DRAW", x, y, FONT_SIZE, RED);
     }
+    //play again button
+
+    //button 100x400
+    int button_x = (SCREEN_WIDTH-400)/2;
+    int button_y = (SCREEN_HEIGHT-100)/2 + SCREEN_HEIGHT/4;
+    DrawRectangle(button_x-5, button_y-5, 410, 110, BLACK); //drop shadow
+    DrawRectangle(button_x, button_y, 400, 100, WHITE);
+    int text_width = MeasureText("PLAY AGAIN", FONT_SIZE/2);
+    int padding_left = (400 - text_width)/2;
+    int padding_top = (100 - FONT_SIZE/2)/2;
+    DrawText("PLAY AGAIN", button_x + padding_left, button_y + padding_top, FONT_SIZE/2, BLACK);
+
 }
 
 void Game::draw_select(int pos, Color color) {
@@ -210,6 +225,20 @@ void Game::go_foward_board() {
             is_paused = false;
         }
     }
+}
+
+bool Game::check_play_again(int x, int y) {
+    //returns true if the user clicks play again button
+    //button 100x400
+    int button_x = (SCREEN_WIDTH-400)/2;
+    int button_y = (SCREEN_HEIGHT-100)/2 + SCREEN_HEIGHT/4;
+    if (button_x <= x && x <= button_x + 400) {
+        if (button_y <= y && y <= button_y + 100) {
+            return true;
+        }
+    }
+    return false;
+
 }
 
 void Game::promotion_menu() {

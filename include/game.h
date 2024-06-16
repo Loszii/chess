@@ -37,6 +37,7 @@ class Game {
         Game(bool textures=true);
         //drawing
         void draw_game();
+        void draw_game_over();
         void promotion_menu();
         //functionality
         void select_move(int pos);
@@ -47,6 +48,7 @@ class Game {
         void pick_a_piece(int x, int y);
         void go_back_board(); //for stack
         void go_foward_board();
+        bool check_play_again(int x, int y);
         //movement
         std::vector<std::vector<int>> get_all_legal_moves();
         //engine

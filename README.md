@@ -32,6 +32,6 @@ The entire chess engine was made using basic C++ code. The GUI was made possible
 To play my chess engine you can either compile the program yourself using CMake, or navigate to the **installer** directory and run the **.exe** to get the latest version.
 
 <div>
-  <img src="/res/readme_board.jpg" width="45%">
-  <img src="/res/readme_mate.jpg" width="45%">
+  <img src="/images/start_board.jpg" width="45%">
+  <img src="/images/check_mate.jpg" width="45%">
 </div>
