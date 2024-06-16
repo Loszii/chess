@@ -15,6 +15,7 @@ const int MIN_INT = -MAX_INT;
 void Game::engine_move(int depth) {
     //makes engines move
     std::array<int, 2> alg_moves = get_best_move(depth);
+    save_board();
     update_board(alg_moves[0], alg_moves[1]);
     check_draw();
     check_game_over();

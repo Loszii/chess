@@ -155,6 +155,7 @@ void Game::set_promotion_pos() {
 
 void Game::apply_promotion(int pos) {
     //given a position of three digits, promote pawn at select_pos to pos
+    save_board();
     update_board(select_pos, pos);
     check_draw();
     check_game_over(); //checks for end of game
@@ -180,6 +181,33 @@ void Game::pick_a_piece(int x, int y) {
     if ((SCREEN_WIDTH - 256) / 2 + 128 <= x && x <= ((SCREEN_WIDTH - 256) / 2) + 256) {//queen
         if (((SCREEN_WIDTH - 256) / 2) + 128 <= y && y <= ((SCREEN_WIDTH - 256) / 2) + 256) {
             apply_promotion(500 + is_promoting);
+        }
+    }
+}
+
+void Game::go_back_board() {
+    //sets board back to the previous board
+    if (select) {
+        select = false; //unselect piece
+    }
+    if (!past_boards.empty()) {
+        future_boards.push(board); //push current 
+        board = past_boards.top(); //get last board
+        past_boards.pop();
+        is_paused = true;
+    }
+}
+
+void Game::go_foward_board() {
+    //sets board to the future board if there is one
+    if (!future_boards.empty()) {
+        save_board();
+        board = future_boards.top();
+        future_boards.pop();
+
+        //if empty now resume game
+        if (future_boards.empty()) {
+            is_paused = false;
         }
     }
 }
@@ -213,6 +241,7 @@ void Game::select_move(int pos) {
                 for (int i=0; i < (int)moves.size(); i++) {
                     if (pos == moves[i]) {
                         select = false;
+                        save_board();
                         update_board(select_pos, pos);
                         check_draw();
                         check_game_over(); //checks for end of game
@@ -435,6 +464,11 @@ bool Game::is_prev_board() {
     } else {
         return false;
     }
+}
+
+void Game::save_board() {
+    //pushes current board onto stack, to be called after updating
+    past_boards.push(board);
 }
 
 void Game::move_piece(int start_pos, int end_pos) {

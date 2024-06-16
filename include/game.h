@@ -2,6 +2,7 @@
 #include <unordered_map>
 #include <tuple>
 #include <vector>
+#include <stack>
 #include "raylib.h"
 #include "board.h"
 
@@ -26,6 +27,7 @@ class Game {
         int game_over = 0;
         int is_promoting = -1;
         bool player_turn;
+        bool is_paused = false;
 
         std::unordered_map<int, Texture2D> skins; //skin textures maps num to Texture2D
         Texture2D board_texture;
@@ -43,6 +45,8 @@ class Game {
         void undo_update_board(Board old_board);
         void apply_promotion(int pos);
         void pick_a_piece(int x, int y);
+        void go_back_board(); //for stack
+        void go_foward_board();
         //movement
         std::vector<std::vector<int>> get_all_legal_moves();
         //engine
@@ -61,6 +65,8 @@ class Game {
         std::unordered_map<Board, int, BoardHasher> history; //prev boards
         std::vector<int> promotion_positions;
         std::vector<int> moves; //storage for current possible moves of selected piece
+        std::stack<Board> past_boards; //storage for boards when going back a move
+        std::stack<Board> future_boards; //storage for boards popped from past boards
         bool select = false;
         int select_pos = -1;
         std::unordered_map<int, std::tuple<int, int>> coord; //mapping of indices to x-y coord in window
@@ -79,6 +85,7 @@ class Game {
         std::unordered_map<int, int> get_material();
         bool hash_board();
         bool is_prev_board();
+        void save_board();
         //movement
         void move_piece(int start_pos, int end_pos);
         void check_castle(bool w_turn, const std::vector<int>& enemy_moves);
