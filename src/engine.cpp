@@ -9,7 +9,8 @@
 //https://www.chessprogramming.org/Simplified_Evaluation_Function
 
 const int MAX_INT = std::numeric_limits<int>::max();
-const int MIN_INT = -MAX_INT;
+const int MIN_INT = -MAX_INT; //must use -max for pruning to work properly (<int>::min() is 1 less than -max so can't properly negate in negamax)
+const int CHECK_MATE = MIN_INT + 10; //add some room at limit of minimum to account for depth of mate
 
 //actually making the move
 void Game::engine_move(int depth) {
@@ -174,7 +175,10 @@ int Game::negamax(int depth, int alpha, int beta) {
     if (moves.empty()) {
         if (!board.b_check && !board.w_check) { //no check so stalemate
             return 0;
-        } //if not will return MIN_INT
+        } else { //checkmate
+            return CHECK_MATE - depth; //subtract depth (higher depth is better since not as far down tree)
+            //this makes the engine pick the nearest mate
+        }
     }
 
     for (int i=0; i < (int)moves.size(); i++) {
@@ -214,7 +218,7 @@ std::array<int, 2> Game::get_best_move(int depth) {
             undo_update_board(old_board);
 
             //add move if better than previous value
-            if (temp >= value) {
+            if (temp > value) {
                 value = temp;
                 result = {moves[i][0], moves[i][j]};
             }

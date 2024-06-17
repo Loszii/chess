@@ -101,3 +101,63 @@ TEST(Game, Perft) {
     game.board.b_castle = {false, false, false, false};
     ASSERT_EQ(perft(game, 4), (u64)3894594);
 }
+
+//test to make sure engine can detect checkmate edge cases
+TEST(Game, Engine) {
+    Game game = Game(false);
+    game.board.data = {0,0,-6,0,0,0,0,0, //checkmate in one
+                       0,0,0,0,5,0,0,0,
+                       0,0,6,0,0,0,0,0,
+                       0,0,0,0,0,0,0,0,
+                       0,0,0,0,0,0,0,0,
+                       0,0,0,0,0,0,0,0,
+                       0,0,0,0,0,0,0,0,
+                       0,0,0,0,0,0,0,0};
+    game.board.w_turn = true;
+    game.board.w_king_pos = 18;
+    game.board.b_king_pos = 2;
+    game.board.w_check = false;
+    game.board.b_check = false;
+    game.board.w_castle = {false, false, false, false};
+    game.board.b_castle = {false, false, false, false};
+    game.board.en_passant = -1;
+    game.engine_move(4);
+    std::array<int, 64> best_move = {0,0,-6,0,0,5,0,0, //checkmate in one
+                                    0,0,0,0,0,0,0,0,
+                                    0,0,6,0,0,0,0,0,
+                                    0,0,0,0,0,0,0,0,
+                                    0,0,0,0,0,0,0,0,
+                                    0,0,0,0,0,0,0,0,
+                                    0,0,0,0,0,0,0,0,
+                                    0,0,0,0,0,0,0,0};
+    ASSERT_EQ(game.board.data, best_move);
+
+
+    game.board.data = {0,0,-6,0,0,0,0,0, //make sure dont crash when walking into mate
+                       0,0,0,0,0,0,0,5,
+                       0,0,0,0,0,0,0,0,
+                       0,0,0,0,0,0,0,0,
+                       0,0,0,0,0,0,0,0,
+                       0,0,0,0,0,0,0,0,
+                       0,0,0,0,0,0,0,0,
+                       0,6,0,0,0,0,4,0};
+    game.board.w_turn = false;
+    game.board.w_king_pos = 57;
+    game.board.b_king_pos = 2;
+    game.board.w_check = false;
+    game.board.b_check = false;
+    game.board.w_castle = {false, false, false, false};
+    game.board.b_castle = {false, false, false, false};
+    game.board.en_passant = -1;
+    game.engine_move(4);
+    best_move = {0,0,0,-6,0,0,0,0,
+                0,0,0,0,0,0,0,5,
+                0,0,0,0,0,0,0,0,
+                0,0,0,0,0,0,0,0,
+                0,0,0,0,0,0,0,0,
+                0,0,0,0,0,0,0,0,
+                0,0,0,0,0,0,0,0,
+                0,6,0,0,0,0,4,0};
+
+    ASSERT_EQ(game.board.data, best_move);
+}
