@@ -2,6 +2,7 @@
 #include "board.h"
 
 Board::Board() {
+    //details to describe the current state of board
     data = {
         -4, -3, -2, -5, -6, -2, -3, -4,
         -1, -1, -1, -1, -1, -1, -1, -1,
@@ -24,6 +25,7 @@ Board::Board() {
 
 Board::Board(std::array<int, 64> data, bool w_turn, int w_king_pos, int b_king_pos, bool w_check, bool b_check, std::array<bool, 4> w_castle, std::array<bool, 4> b_castle,
  int en_passant) {
+    //constructor for making a copy of current board
     this->data = data;
     this->w_turn = w_turn;
     this->w_king_pos = w_king_pos;
@@ -36,7 +38,7 @@ Board::Board(std::array<int, 64> data, bool w_turn, int w_king_pos, int b_king_p
 }
 
 bool Board::operator==(const Board& other) const {
-    //improve this
+    //comparison operator for hashing
     if (data == other.data && w_turn == other.w_turn && w_castle == other.w_castle && b_castle == other.b_castle && en_passant == other.en_passant) {
         return true;
     } else {

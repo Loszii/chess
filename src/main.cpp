@@ -20,7 +20,7 @@ int main() {
         BeginDrawing();
         ClearBackground(WHITE);
         game->draw_game(); //draws pieces and board
-        if (game->is_promoting != -1) {
+        if (game->promotion_pos != -1) {
             game->promotion_menu(); //lets user select their promo
         } else if (game->game_over != 0) {
             game->draw_game_over(); //displays winner and play again button
@@ -28,7 +28,8 @@ int main() {
         EndDrawing();
 
         //functionality
-        if (game->game_over == 0 && game->is_promoting == -1) { //game not over and not promoting
+        if (game->game_over == 0 && game->promotion_pos == -1) { //game not over and not promoting
+
             if (game->player_turn) {
                 if (IsMouseButtonPressed(MOUSE_BUTTON_RIGHT)) { //checking last board
                     game->go_back_board();
@@ -45,37 +46,34 @@ int main() {
             }
 
         } else if (game->game_over == 0) { //game not over and must be promoting
+
             if (IsMouseButtonPressed(MOUSE_BUTTON_LEFT)) {
                 int x = GetMouseX();
                 int y = GetMouseY();
 
                 game->pick_a_piece(x, y); //pick piece to promote
             }
+
         } else { //game over, check for playing again
+
             if (IsMouseButtonPressed(MOUSE_BUTTON_LEFT)) {
                 int x = GetMouseX();
                 int y = GetMouseY();
                 if (game->check_play_again(x, y)) { //check if play again was clicked
                     //unload textures
-                    UnloadTexture(game->board_texture);
-                    UnloadTexture(game->select_texture);
-                    for (auto& skin : game->skins) {
-                        UnloadTexture(skin.second);
-                    }
+                    game->unload_all();
                     //make new game
                     delete game;
                     game = new Game();
                 }
             }
+
         }
     }
     //unloading textures
-    UnloadTexture(game->board_texture);
-    UnloadTexture(game->select_texture);
-    for (auto& skin : game->skins) {
-        UnloadTexture(skin.second);
-    }
+    game->unload_all();
     delete game;
+    
     CloseWindow();
     return 0;
 }

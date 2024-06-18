@@ -8,6 +8,7 @@
 #include "raylib.h"
 
 Game::Game(bool textures) {
+    //load in raylib textures
     if (textures) {
         board_texture = LoadTexture("../res/board.png");
         select_texture = LoadTexture("../res/selector.png");
@@ -34,14 +35,16 @@ Game::Game(bool textures) {
     int num = distr(gen);
     if (num == 0) {
         player_turn = false;
+        is_flipped = true;
     } else {
         player_turn = true;
+        is_flipped = false;
     }
 
     //coord
     int x = BEVEL;
     int y = BEVEL;
-    if (player_turn) {
+    if (!is_flipped) {
         for (int i=0; i < 64; i ++) {
             coord[i] = std::make_tuple(x, y);
             x += SQUARE_WIDTH;
@@ -67,7 +70,8 @@ Game::Game(bool textures) {
 }
 
 void Game::draw_game() {
-    //draws the board, pieces, check indicators, available moves, and end game screens
+    //draws the board, pieces, check indicators and available moves
+
     DrawTexture(board_texture, 0, 0, WHITE); //board
     int x;
     int y;
@@ -83,18 +87,13 @@ void Game::draw_game() {
     if (select) {
         draw_select(select_pos, Color{0, 0, 0, 150});
         if (!moves.empty()) {
-            if (moves[0] < 100) { //not a promoting pawn
-                for (int i=0; i < (int)moves.size(); i++) {
-                    draw_select(moves[i], Color{0, 0, 0, 150});
-                }
-            } else {
-                for (int i=0; i < (int)promotion_positions.size(); i++) {
-                    draw_select(promotion_positions[i], Color{0, 0, 0, 150});
-                }
+            for (int i=0; i < (int)moves.size(); i++) {
+                draw_select(moves[i], Color{0, 0, 0, 150});
             }
         }
     }
 
+    //draw check indicator
     if (board.w_check) {
         draw_select(board.w_king_pos, Color{255, 0, 0, 150});
     } else if (board.b_check) {
@@ -142,60 +141,45 @@ void Game::draw_select(int pos, Color color) {
     DrawTextureEx(select_texture, (Vector2){(float)x, (float)y}, 0, 1, color);
 }
 
-void Game::set_promotion_pos() {
-    //sets promotion_positions to the positions a pawn can promote to or clears it if no current promotion
-    //removes duplicates (303, 203, 403, 503 = 03)
-    if (moves.empty()) {
-        promotion_positions.clear();
-        return;
-    } else if (moves[0] < 100) { //nothing promoting
-        promotion_positions.clear();
-        return;
-    }
-    std::vector<int> result;
-    bool already_checked = false;
-    for (int i=0; i < (int)moves.size(); i++) {
-        for (int j=0; j < (int)result.size(); j++) {
-            if (moves[i]%100 == result[j]) {
-                already_checked = true;
-            }
-        }
-        if (!already_checked) {
+void Game::format_promotions() {
+    //checks if moves is a list of promotions of form [200, 300, 400, 500] and converts it to just the positions to promote
+    if (!moves.empty() && moves[0] > 99) {
+        std::vector<int> result;
+        int i = 0;
+        while (i < (int)moves.size()) { //while more positions to promote
             result.push_back(moves[i]%100);
+            i += 4; //each promotion has 4 duplicates
         }
-        already_checked = false;
+        moves = result; //change moves to just the positions
+        is_promoting = true;
     }
-    promotion_positions = result;
-}
-
-void Game::apply_promotion(int pos) {
-    //given a position of three digits, promote pawn at select_pos to pos
-    save_board();
-    update_board(select_pos, pos);
-    check_draw();
-    check_game_over(); //checks for end of game
-    is_promoting = -1; //disables promotion menu
 }
 
 void Game::pick_a_piece(int x, int y) {
+    //takes in mouse coordinates and applys the promotion they click on via promotion menu
+
     if ((SCREEN_WIDTH - 256) / 2 <= x && x <= ((SCREEN_WIDTH - 256) / 2) + 128) {//bishop
-        if ((SCREEN_WIDTH - 256) / 2 <= y && y <= ((SCREEN_WIDTH - 256) / 2) + 128) {
-            apply_promotion(200 + is_promoting);
+        if ((SCREEN_HEIGHT - 256) / 2 <= y && y <= ((SCREEN_HEIGHT - 256) / 2) + 128) {
+            make_turn(select_pos, 200 + promotion_pos);
+            promotion_pos = -1;
         }
     }
     if ((SCREEN_WIDTH - 256) / 2 + 128 <= x && x <= ((SCREEN_WIDTH - 256) / 2) + 256) {//knight
-        if ((SCREEN_WIDTH - 256) / 2 <= y && y <= ((SCREEN_WIDTH - 256) / 2) + 128) {
-            apply_promotion(300 + is_promoting);
+        if ((SCREEN_HEIGHT - 256) / 2 <= y && y <= ((SCREEN_HEIGHT - 256) / 2) + 128) {
+            make_turn(select_pos, 300 + promotion_pos);
+            promotion_pos = -1;
         }
     }
     if ((SCREEN_WIDTH - 256) / 2 <= x && x <= ((SCREEN_WIDTH - 256) / 2) + 128) {//rook
-        if (((SCREEN_WIDTH - 256) / 2) + 128 <= y && y <= ((SCREEN_WIDTH - 256) / 2) + 256) {
-            apply_promotion(400 + is_promoting);
+        if (((SCREEN_HEIGHT - 256) / 2) + 128 <= y && y <= ((SCREEN_HEIGHT - 256) / 2) + 256) {
+            make_turn(select_pos, 400 + promotion_pos);
+            promotion_pos = -1;
         }
     }
     if ((SCREEN_WIDTH - 256) / 2 + 128 <= x && x <= ((SCREEN_WIDTH - 256) / 2) + 256) {//queen
-        if (((SCREEN_WIDTH - 256) / 2) + 128 <= y && y <= ((SCREEN_WIDTH - 256) / 2) + 256) {
-            apply_promotion(500 + is_promoting);
+        if (((SCREEN_HEIGHT - 256) / 2) + 128 <= y && y <= ((SCREEN_HEIGHT - 256) / 2) + 256) {
+            make_turn(select_pos, 500 + promotion_pos);
+            promotion_pos = -1;
         }
     }
 }
@@ -241,20 +225,30 @@ bool Game::check_play_again(int x, int y) {
 
 }
 
+void Game::unload_all() {
+    //unloads all raylib textured to prevent memory leaks
+    UnloadTexture(board_texture);
+    UnloadTexture(select_texture);
+    for (auto& skin : skins) {
+        UnloadTexture(skin.second);
+    }
+}
+
 void Game::promotion_menu() {
     //prompts the player to select a piece to promote
 
     //menu 256px by 256px
     int side = 1;
-    int menu_x = (SCREEN_WIDTH - 256) / 2;
-    int menu_y = (SCREEN_WIDTH - 256) / 2;
-    int piece_width = 128;
-    //menu
-    DrawRectangle(menu_x - 5, menu_y - 5, 256 + 10, 256 + 10, BLACK); //dropshadow
-    DrawRectangle(menu_x, menu_y, 256, 256, WHITE);
     if (!board.w_turn) {
         side = -1;
     }
+    int menu_x = (SCREEN_WIDTH - 256) / 2;
+    int menu_y = (SCREEN_HEIGHT - 256) / 2;
+    int piece_width = 128;
+
+    //menu
+    DrawRectangle(menu_x - 5, menu_y - 5, 256 + 10, 256 + 10, BLACK); //dropshadow
+    DrawRectangle(menu_x, menu_y, 256, 256, WHITE);
     DrawTextureEx(skins[side * 2], (Vector2){(float)menu_x, (float)menu_y}, 0, 1.0, WHITE);
     DrawTextureEx(skins[side * 3], (Vector2){(float)(menu_x + piece_width), (float)menu_y}, 0, 1.0, WHITE);
     DrawTextureEx(skins[side * 4], (Vector2){(float)menu_x, (float)(menu_y + piece_width)}, 0, 1.0, WHITE);
@@ -266,24 +260,15 @@ void Game::select_move(int pos) {
     if (select) {
         //check if mouse was clicked on a available move
         if (!moves.empty()) {
-            if (moves[0] < 100) { //not promoting
-                for (int i=0; i < (int)moves.size(); i++) {
-                    if (pos == moves[i]) {
-                        select = false;
-                        save_board();
-                        update_board(select_pos, pos);
-                        check_draw();
-                        check_game_over(); //checks for end of game
-                        break;
+            for (int i=0; i < (int)moves.size(); i++) {
+                if (pos == moves[i]) {
+                    select = false;
+                    if (!is_promoting) {
+                        make_turn(select_pos, pos); //completes the turn
+                    } else {
+                        promotion_pos = pos; //sets promotion to position for turn to be completed via menu
                     }
-                }
-            } else {
-                for (int i=0; i < (int)promotion_positions.size(); i++) {
-                    if (pos == promotion_positions[i]) {
-                        select = false;
-                        is_promoting = pos;
-                        break;
-                    }
+                    break;
                 }
             }
         }
@@ -297,15 +282,16 @@ void Game::select_move(int pos) {
 
 void Game::check_for_selection(int pos) {
     //checks if there is a piece to select at given pos, if so sets select to true, select_pos to pos, sets moves to all moves of that piece
+    select = false;
+    is_promoting = false;
+
     if ((board.w_turn && board.data[pos] > 0) || (!board.w_turn && board.data[pos] < 0)) { //pos num 0-100 representing 2d array indices
         //below code runs if there is a move to select
         select = true;
         select_pos = pos;
         moves.clear();
         get_legal_moves(pos, moves); //gets possible moves
-        set_promotion_pos(); //adds any promo squares
-    } else {
-        select = false;
+        format_promotions(); //converts moves to regular format if promoting and sets is_promoting to true
     }
 }
 
@@ -318,9 +304,9 @@ int Game::get_index(int x, int y) {
     x = x / SQUARE_WIDTH;
     pos = y*8 + x;
     if (pos >= 0 && pos <= 63) {
-        if (player_turn && board.w_turn) {
+        if (!is_flipped) {
             return pos;
-        } else { //swap for playing as black
+        } else { //flip index
             return 63 - pos;
         }
     } else {
@@ -329,13 +315,14 @@ int Game::get_index(int x, int y) {
 }
 
 void Game::swap_turn() {
+    //swaps the turn on board
     board.w_turn = !board.w_turn;
     player_turn = !player_turn;
 }
 
 Board Game::update_board(int start_pos, int end_pos) {
-    //moves piece given params, then updates board attributes, first swaps the turn and then checks conditions before player moves
-    //returns old board
+    //moves piece given params, then updates board attributes, first swaps the turn and then checks conditions before next player moves
+    //returns old board for undoing this function
     Board old_board = Board(board.data, board.w_turn, board.w_king_pos, board.b_king_pos, board.w_check, board.b_check, board.w_castle,
     board.b_castle, board.en_passant);
 
@@ -360,6 +347,7 @@ Board Game::update_board(int start_pos, int end_pos) {
 }
 
 void Game::undo_update_board(Board old_board) {
+    //given a old board undoes the update_board function
     board = old_board;
     player_turn = !player_turn;
 }
@@ -447,7 +435,7 @@ bool Game::check_material() {
         return false;
     } else if (mats[3] == 1 && mats[2] == 1) { //white has a bishop and a knight
         return false;
-    } else if (mats[-1] > 0 || mats[1] > 0) { //either havs a pawn
+    } else if (mats[-1] > 0 || mats[1] > 0) { //either has a pawn
         return false;
     } else { //ran out of material so must be draw
         return true;
@@ -498,6 +486,14 @@ bool Game::is_prev_board() {
 void Game::save_board() {
     //pushes current board onto stack, to be called after updating
     past_boards.push(board);
+}
+
+void Game::make_turn(int start_pos, int end_pos) {
+    //completes an entire turn, consists of updating things and checking all conditions
+    save_board();
+    update_board(start_pos, end_pos);
+    check_draw();
+    check_game_over();
 }
 
 void Game::move_piece(int start_pos, int end_pos) {
@@ -958,7 +954,7 @@ void Game::get_trajectory(int pos, std::vector<int>& result) {
 }
 
 std::vector<int> Game::get_all_trajectories(bool w_turn) {
-    //returns all trajectories of the players to move pieces in a vector
+    //returns all trajectories of the current player's pieces in a vector
     std::vector<int> result;
     result.reserve(50); //to prevent copying
 
@@ -1009,7 +1005,7 @@ std::vector<std::vector<int>> Game::get_all_legal_moves() {
 }
 
 void Game::check_castle(bool w_turn, const std::vector<int>& enemy_moves) {
-    //updates castle array for turn defiend in paramter, given a array of the enemies available moves
+    //updates castle array for turn defined in paramter, given a array of the enemies available moves
     std::array<bool, 4>* castle;
     if (w_turn) {
         castle = &board.w_castle;
