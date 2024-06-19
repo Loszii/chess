@@ -9,9 +9,14 @@ const int SCREEN_WIDTH = 784;
 const int SCREEN_HEIGHT = 784;
 
 int main() {
+    
     //window
     InitWindow(SCREEN_WIDTH, SCREEN_HEIGHT, "Chess");
     SetTargetFPS(30);
+    Image icon = LoadImage("../res/icon.png");
+    SetWindowIcon(icon);
+
+    //new game
     Game* game = new Game();
 
     //Game loop
@@ -73,7 +78,7 @@ int main() {
     //unloading textures
     game->unload_all();
     delete game;
-    
+    UnloadImage(icon);
     CloseWindow();
     return 0;
 }

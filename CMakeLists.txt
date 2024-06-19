@@ -38,6 +38,7 @@ add_executable(
   src/main.cpp
   ${SOURCES}
   ${HEADERS}
+  res/icon.rc
 )
 target_include_directories(chess PRIVATE include)
 target_link_libraries(
@@ -53,6 +54,7 @@ install(TARGETS chess RUNTIME DESTINATION bin)
 install(DIRECTORY res DESTINATION .)
 set(CPACK_PACKAGE_NAME "Loszi's Chess Engine")
 set(CPACK_PACKAGE_VERSION "2.0")
+set(CPACK_RESOURCE_FILE_LICENSE "${CMAKE_SOURCE_DIR}/LICENSE.md")
 include(CPack)
 
 #-----for testing-----

@@ -29,7 +29,7 @@ The entire chess engine was made using basic C++ code. The GUI was made possible
 
 # How to Play
 
-To play my chess engine you can either compile the program yourself using CMake, or navigate to the **installer** directory and run the **.exe** to get the latest version.
+To play my chess engine you can either compile the program yourself using CMake, or navigate to the **installer** directory and run the **.exe** to get the latest version. After installing go to the folder and run **bin/chess.exe**.
 
 <div>
   <img src="/images/start_board.jpg" width="45%">
